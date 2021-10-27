@@ -1,4 +1,4 @@
-PROJECT (VisIVOServer_CUDA)
+PROJECT (VisIVOServer_2.2)
 # Well technicall you also need:
 # http://cmake.org/Bug/bug.php?op=show&bugid=3582
 cmake_minimum_required(VERSION 2.8.5)
@@ -10,26 +10,31 @@ OPTION (LIGHT "You must select OFF to compile on a full features" ON)
 OPTION (GLITE "You must select ON to compile on gLite grid nodes" OFF)
 OPTION (AHF "You must select ON to compile with AHF features" OFF)
 OPTION (SPLVISIVO "You must select ON to compile with Splotch" ON)
-OPTION (VSCUDA "You must select ON to compile with CUDA support" OFF)
+OPTION (SPLCUDA "You must select ON to compile with CUDA support" OFF)
+OPTION (VSMPI "You must select ON to compile with MPI support" OFF)
 
 
-SET(CFITSIO_DIR "/opt/local/var/macports/software/cfitsio/3.280_1/opt/local/" CACHE PATH "")
-SET(CURL_DIR "/opt/local/var/macports/software/curl/7.21.7_0+ssl/opt/local/" CACHE PATH "")
-SET(HDF5_DIR "/opt/local/var/macports/software/hdf5-18/1.8.7_1/opt/local/" CACHE PATH "")
+SET(CFITSIO_DIR "/opt/local/" CACHE PATH "")
+SET(CURL_DIR "/opt/local/" CACHE PATH "")
+SET(HDF5_DIR "/opt/local/" CACHE PATH "")
 
-
-#SET(VTK_DIR /opt/vtk-5.6.0/lib/vtk-5.6)
+SET(VTK_DIR "/opt/vtk5/lib/vtk-5.10/")
 #SET(CFITSIO_DIR "SET_CFITSIO_DIR" CACHE PATH "")
 #SET(CURL_DIR "SET_CURL_DIR" CACHE PATH "")
 #SET(HDF5_DIR "SET_HDF5_DIR" CACHE PATH "")
 
+if(VSMPI)
+	ADD_DEFINITIONS(-DVSMPI)
+    SET(CMAKE_CXX_COMPILER "Users/ubesoft/mpich2-install/bin/mpicxx" CACHE PATH "")
+endif(VSMPI)
 
-if(VSCUDA)
+if(SPLCUDA)
 	ADD_DEFINITIONS(-DCUDA)
 	ADD_DEFINITIONS(-DNO_WIN_THREAD)
 	find_package(CUDA)
-endif(VSCUDA)
+endif(SPLCUDA)
 
+#ADD_DEFINITIONS(-DHDF5)
 
 
 FIND_PACKAGE(VTK REQUIRED)
@@ -39,7 +44,7 @@ FIND_PACKAGE(VTK REQUIRED)
 #is distributed since version 2.8
 #CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 #Searching CUDA
-#FIND_PACKAGE(CUDA)
+FIND_PACKAGE(CUDA)
 
 #Adding src directory to the project
 #ADD_SUBDIRECTORY(src)
@@ -108,11 +113,11 @@ SET(DIRS VisIVOImporter/External VisIVOImporter/Importers  Utils VisIVOViewer/pi
 endif(LIGHT)
 
 if(SPLVISIVO)
- if(VSCUDA)
+ if(SPLCUDA)
  	SET(SPLDIRS VisIVOViewer/Splotch/kernel VisIVOViewer/Splotch/cxxsupport VisIVOViewer/Splotch/cuda VisIVOViewer/Splotch/reader VisIVOViewer/Splotch/splotch VisIVOViewer/Splotch/booster /VisIVOViewer/Splotch/c_utils)
- else(VSCUDA)
+ else(SPLCUDA)
 	 SET(SPLDIRS VisIVOViewer/Splotch/kernel VisIVOViewer/Splotch/cxxsupport VisIVOViewer/Splotch/reader VisIVOViewer/Splotch/splotch VisIVOViewer/Splotch/booster /VisIVOViewer/Splotch/c_utils)
-endif(VSCUDA)
+endif(SPLCUDA)
 FOREACH(DIR_VAL ${SPLDIRS})
         INCLUDE(./${DIR_VAL}/CMakeLists.txt)
         FOREACH(VAL ${PRJ_SRC})
@@ -179,7 +184,8 @@ if(AHF)
  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/VisIVOFilters/Filters/AHFstep/replace)
 endif(AHF)
 
-SET_SOURCE_FILES_PROPERTIES(${SOURCESSpl} PROPERTIES COMPILE_FLAGS "-c -std=c++98 -Wno-long-long -Wfatal-errors -Wextra -Wall -Wstrict-aliasing=2 -Wundef -Wshadow -Wwrite-strings -Wredundant-decls -Woverloaded-virtual -Wcast-qual -Wcast-align -Wpointer-arith -Wold-style-cast -O2 -g")
+SET_SOURCE_FILES_PROPERTIES(${SOURCESSpl} PROPERTIES COMPILE_FLAGS "-c -Wno-long-long -Wfatal-errors -Wextra -Wall -Wstrict-aliasing=2 -Wundef -Wshadow -Wwrite-strings -Wredundant-decls -Woverloaded-virtual -Wcast-qual -Wcast-align -Wpointer-arith -Wold-style-cast -O2 -g")
+#SET_SOURCE_FILES_PROPERTIES(${SOURCESSpl} PROPERTIES COMPILE_FLAGS "-c -std=c++98 -Wno-long-long -Wfatal-errors -Wextra -Wall -Wstrict-aliasing=2 -Wundef -Wshadow -Wwrite-strings -Wredundant-decls -Woverloaded-virtual -Wcast-qual -Wcast-align -Wpointer-arith -Wold-style-cast -O2 -g")
 #SET_SOURCE_FILES_PROPERTIES(${SOURCESSpl} PROPERTIES COMPILE_FLAGS "-c -std=c++98 -pedantic -Wno-long-long -Wfatal-errors -Wextra -Wall -Wstrict-aliasing=2 -Wundef -Wshadow -Wwrite-strings -Wredundant-decls -Woverloaded-virtual -Wcast-qual -Wcast-align -Wpointer-arith -Wold-style-cast -O2 -g")
 
 
@@ -285,11 +291,11 @@ ADD_EXECUTABLE(VisIVOFilters ${GUI_EXECUTABLE} ${SRCS_VisIVOFilters})
 #INSTALL_TARGETS(/bin VisIVOFilters)
 
 include_directories(/Developer/GPU\ Computing/CUDALibraries/common/inc/ ) 
-if(VSCUDA)
+if(SPLCUDA)
 CUDA_ADD_EXECUTABLE(VisIVOViewer ${GUI_EXECUTABLE} ${SRCS_VisIVOViewer})
-else(VSCUDA)
+else(SPLCUDA)
 ADD_EXECUTABLE(VisIVOViewer ${GUI_EXECUTABLE} ${SRCS_VisIVOViewer})
-endif(VSCUDA)
+endif(SPLCUDA)
 #INSTALL_TARGETS(/bin VisIVOViewer)
 
 ADD_EXECUTABLE(VisIVOUtils ${GUI_EXECUTABLE} ${SRCS_VisIVOUtils})

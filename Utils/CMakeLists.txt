@@ -1,6 +1,12 @@
 if(GLITE)
 SET(PRJ_SRC
 
+historyXmlWriter.cc
+tinystr.cpp
+tinyxml.cpp
+tinyxmlerror.cpp
+tinyxmlparser.cpp
+
 startFilter.cpp
 
 visivoutils.cpp
@@ -18,7 +24,11 @@ glitegw.cpp
 )
 else(GLITE)
 SET(PRJ_SRC
-
+historyXmlWriter.cc
+tinystr.cpp
+tinyxml.cpp
+tinyxmlerror.cpp
+tinyxmlparser.cpp
 
 startFilter.cpp
 visivoutils.cpp

@@ -1,0 +1,34 @@
+# Gaia GSRPar Makefile
+
+COMPILER = /usr/bin/g++
+COMPILERCPP = /usr/bin/g++
+
+CC = $(COMPILER)
+CPP= $(COMPILERCPP)
+
+ROOT=/Users/ube/VisIVOServer_OACT/2.3/
+
+VSFILINC1=$(ROOT)/VisIVOImporter/Importers
+VSFILINC2=$(ROOT)/Utils
+
+VSFIL=	$(ROOT)/abstractsource.o	$(ROOT)/binsource.o		$(ROOT)/fitsimagesource.o	$(ROOT)/flysource.o			$(ROOT)/mainImporter.o	$(ROOT)/ramsessource.o	$(ROOT)/rawpointssource.o	$(ROOT)/vosourcenew.o $(ROOT)/asciisource.o		$(ROOT)/csvsource.o		$(ROOT)/fitstablesource.o	$(ROOT)/gadgetsource.o	$(ROOT)/hdf5source.o		$(ROOT)/muportalsource.o	$(ROOT)/rawgridsource.o $(ROOT)/Utils/tinystr.o		$(ROOT)/Utils/tinyxml.o		$(ROOT)/Utils/tinyxmlerror.o	$(ROOT)/Utils/tinyxmlparser.o	$(ROOT)/Utils/historyXmlWriter.o $(ROOT)/Utils/commandline.o $(ROOT)/Utils/visivoutils.o		
+
+
+INCLUDE = -I$(VSFILINC1) -I$(VSFILINC2) -I/opt/local/include/ -I/usr/local/include/ -I/usr/local/Cellar/boost/1.59.0/include 
+#INCLUDE = -I$(GAIAINC) 
+#CFLAGS= $(INCLUDE)  -std=c99 
+#CPPFLAGS= $(INCLUDE) -g -fsanitize=address -mllvm -asan-stack
+CPPFLAGS= -DLIGHT $(INCLUDE)
+LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib 
+LIB = -lcurl -lhdf5 -lcfitsio -lm
+
+
+all: VisIVOFilter 
+
+VisIVOFilter: $(VSFIL)
+	$(CPP) $(CPPFLAGS) -o VisIVOFilter $(VSFIL) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+
+
+	
+clean:
+	rm -f *.o ../../Utils/*.o core
