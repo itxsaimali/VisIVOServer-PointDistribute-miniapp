@@ -25,7 +25,7 @@
 
 
 class vtkImageData;
-    class VolumeSlicer;
+    //class VolumeSlicer;
     class vtkTexture;
      class vtkStructuredGrid;
       class vtkStructuredGridGeometryFilter;

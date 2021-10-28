@@ -29,8 +29,13 @@
 #include <vtkImageData.h>
 #include <vtkImageMathematics.h>
 #include <vtkImageCast.h>
+/* VTK9 migration
+
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastMapper.h>
+*/
+
+#include "vtkFixedPointVolumeRayCastMapper.h"
 #include <vtkVolume.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkColorTransferFunction.h>
@@ -58,8 +63,10 @@ VolumePipe::VolumePipe ( VisIVOServerOptions options)
   m_charData                = vtkImageCast::New();
   m_opacityTransferFunction = vtkPiecewiseFunction::New();
   m_volumeProperty          = vtkVolumeProperty::New();
+  /*vtk9 migration
   m_rayCastCompositFunction = vtkVolumeRayCastCompositeFunction::New();
-  m_rayCastMapper           = vtkVolumeRayCastMapper::New();
+  */
+  m_rayCastMapper           = vtkFixedPointVolumeRayCastMapper::New();
   m_volume                  = vtkVolume::New();
 }
 //---------------------------------
@@ -74,7 +81,9 @@ VolumePipe::~VolumePipe()
   m_charData->Delete();
   m_opacityTransferFunction->Delete();
   m_volumeProperty->Delete();
+   /*vtk9 migration
   m_rayCastCompositFunction->Delete();
+  */
   m_rayCastMapper->Delete();
   m_volume->Delete();
 
@@ -90,7 +99,9 @@ void VolumePipe::destroyAll()
   m_charData->Delete();
   m_opacityTransferFunction->Delete();
   m_volumeProperty->Delete();
+   /*vtk9 migration
   m_rayCastCompositFunction->Delete();
+  */
   m_rayCastMapper->Delete();
   m_volume->Delete();
 
@@ -143,7 +154,14 @@ int VolumePipe::createPipe()
   }//else
   volumeField->SetName(m_visOpt.vRenderingField.c_str());
  
+
+/* VTK9 migration 
   m_imageData->SetScalarTypeToFloat();
+  replaced with
+  m_imageData->AllocateScalars(VTK_FLOAT, 3); 
+*/
+  m_imageData->AllocateScalars(VTK_FLOAT, 3);
+
   m_imageData->SetExtent(1,(int)m_visOpt.comp[0],1,(int)m_visOpt.comp[1],1,(int)m_visOpt.comp[2]);
   m_imageData->SetSpacing(m_visOpt.size[0],m_visOpt.size[1],m_visOpt.size[2]);
   m_imageData->GetPointData()->SetScalars(volumeField);
@@ -159,7 +177,13 @@ int VolumePipe::createPipe()
   
   double max = m_range[1];
   double min = m_range[0];
+
+  /* VTK9 migration 
   m_math->SetInput(m_imageData);
+  replaced with
+  m_math->SetInputData(m_imageData);
+*/
+  m_math->SetInputData(m_imageData);
 
   m_math->SetOperationToAddConstant();
   m_math->SetConstantC(-min);
@@ -208,8 +232,9 @@ int VolumePipe::createPipe()
   m_volumeProperty->SetInterpolationTypeToLinear();
   
 
-  
+  /*VTK 9 migration
   m_rayCastMapper->SetVolumeRayCastFunction(m_rayCastCompositFunction);
+  */
   m_rayCastMapper->SetInputConnection(m_charData->GetOutputPort());
   
 

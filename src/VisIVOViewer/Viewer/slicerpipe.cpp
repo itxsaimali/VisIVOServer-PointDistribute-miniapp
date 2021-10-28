@@ -127,18 +127,33 @@ int SlicerPipe::createPipe()
 //     SPR->SetFileName("/home/ube/bovolo.vtk");  // PARAMETRO: file da aprire
 
 vtkOutlineFilter *OF = vtkOutlineFilter::New();
+/* VTK9 migration
    OF->SetInput(structPoints);
+   replaced
+   OF->SetInputData(structPoints);
+
+*/
+   OF->SetInputData(structPoints);
 // vtkOutlineFilter *OF = vtkOutlineFilter::New();
 //    OF->SetInput((vtkDataSet *) SPR->GetOutput());
 
 vtkPolyDataMapper *PDM = vtkPolyDataMapper::New();
+/* VTK9 migration
    PDM->SetInput((vtkPolyData *) OF->GetOutput());
+   replaced
+   PDM->SetInputData((vtkPolyData *) OF->GetOutput());
+
+*/
+   PDM->SetInputData((vtkPolyData *) OF->GetOutput());
    PDM->SetNumberOfPieces(1);
    PDM->SetScalarRange(0 , 1);
    PDM->SetColorMode(1);
    PDM->SetResolveCoincidentTopology(0);
    PDM->SetScalarMode(0);
+   /* VTK 9 migration
+   removed
    PDM->SetImmediateModeRendering(0);
+   */
    PDM->SetScalarVisibility(1);
    PDM->SetUseLookupTableScalarRange(0);
 
@@ -211,14 +226,26 @@ vtkPlane *P = vtkPlane::New();
 
 vtkCutter *C = vtkCutter::New();
    C->SetCutFunction(P);
+   /* VTK9 migration
    C->SetInput(structPoints);
+   replaced
+   C->SetInputData(structPoints);
+
+*/
+   C->SetInputData(structPoints);
 //   C->SetInput((vtkDataSet *) SPR->GetOutput());
    //C->SetValue(0 , 0);
    //C->SetSortBy(0);
    C->SetGenerateCutScalars(1);
    
 vtkPolyDataMapper *PDM2 = vtkPolyDataMapper::New();
+/* VTK9 migration
    PDM2->SetInput((vtkPolyData *) C->GetOutput());
+   replaced
+   PDM2->SetInputData((vtkPolyData *) C->GetOutput());
+
+*/
+   PDM2->SetInputData((vtkPolyData *) C->GetOutput());
    PDM2->SetLookupTable(LT);
    double b[2];
    b[0]=m_range[0];
@@ -229,7 +256,10 @@ vtkPolyDataMapper *PDM2 = vtkPolyDataMapper::New();
    PDM2->SetColorMode(1);
    PDM2->SetResolveCoincidentTopology(0);
    PDM2->SetScalarMode(0);
+   /*VTK9 migration 
+   removed
    PDM2->SetImmediateModeRendering(0);
+   */
    PDM2->SetScalarVisibility(1);
    PDM2->SetUseLookupTableScalarRange(0);
 

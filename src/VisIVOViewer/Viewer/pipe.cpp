@@ -129,7 +129,13 @@ std::string Pipe::saveImageAsPng(int num )
 		ss>>numero;
 		std::string fileName;
 		w2i->SetInput(m_pRenderWindow);
+		/*VTK9 migration
 		w2i->SetMagnification(magnification);
+		replaced with
+		w2i->SetScale(magnification);
+		*/
+		w2i->SetScale(magnification);
+
 		w2i->Update();
 		//std::clog <<"out "<< m_visOpt.imageName.c_str()<<std::endl;
 		if (m_visOpt.imageName!="VisIVOServerImage")
@@ -183,7 +189,13 @@ std::string Pipe::saveImageAsPng(int num )
 		//std::clog <<"fielname "<< fileName.c_str()<<std::endl;
 
 		vtkPNGWriter *w=vtkPNGWriter::New();
+		/* VTK9 migration
 		w->SetInput(w2i->GetOutput());
+		replaced
+					w->SetInputData(w2i->GetOutput());
+		*/
+			w->SetInputData(w2i->GetOutput());
+
 		w->SetFileName(fileName.c_str());
 
 		w->Write();  
@@ -404,11 +416,21 @@ void Pipe::setBoundingBox ( vtkDataObject *data )
 //---------------------------------------------------------------------
 {
 	vtkOutlineCornerFilter*corner= vtkOutlineCornerFilter::New();
+	/* VTK9 migration
 	corner->SetInput(data);
+		replaced
+	corner->SetInputData(data);
+		*/
+	corner->SetInputData(data);
 	corner->ReleaseDataFlagOn();
 
 	vtkPolyDataMapper *outlineMapper = vtkPolyDataMapper::New();
+		/* VTK9 migration
 	outlineMapper->SetInput ( corner->GetOutput() );
+		replaced
+	outlineMapper->SetInputData ( corner->GetOutput() );
+		*/
+	outlineMapper->SetInputData ( corner->GetOutput() );
 
 	vtkProperty *outlineProperty = vtkProperty::New();
 	outlineProperty->SetColor ( 1,1,1 ); // Set the color to white
@@ -461,8 +483,13 @@ void Pipe::setAxes ( vtkDataSet *data, double *bounds  )
 //---------------------------------------------------------------------
 {
   vtkCubeAxesActor2D* axesActor=vtkCubeAxesActor2D::New();
-  
+  	/* VTK9 migration
   axesActor->SetInput ( data );
+		replaced
+  axesActor->SetInputData ( data );
+	*/
+  
+  axesActor->SetInputData ( data );
   axesActor->UseRangesOn();
    
   axesActor->SetBounds ( bounds[0],bounds[1],bounds[2],bounds[3],bounds[4],bounds[5]);

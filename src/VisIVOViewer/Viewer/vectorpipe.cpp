@@ -258,8 +258,10 @@ line->SetPoint2(1,0,0);
 
 vtkArrowSource *arrow = vtkArrowSource::New();
 
-
+/* VTK9 migration
 m_Glyph3D->SetInput(pd);
+*/
+m_Glyph3D->SetInputData(pd);
 
 if(!m_visOpt.vectorLine) m_Glyph3D->SetSourceConnection(arrow->GetOutputPort()); //arrows
 else m_Glyph3D->SetSourceConnection(line->GetOutputPort()); //lines
@@ -282,14 +284,18 @@ if(m_visOpt.vectorScale==0) m_Glyph3D->SetScaleMode(0);
 if(m_visOpt.vectorScale==1) m_Glyph3D->SetScaleMode(1);
 if(m_visOpt.vectorScale==-1) m_Glyph3D->SetScaleMode(3);
  
-
-   m_PolyDataMapper->SetInput((vtkPolyData *) m_Glyph3D->GetOutput());
+  /* VTK9 migration
+  m_PolyDataMapper->SetInput((vtkPolyData *) m_Glyph3D->GetOutput());
+  */
+  m_PolyDataMapper->SetInputData((vtkPolyData *) m_Glyph3D->GetOutput());
   m_PolyDataMapper->SetNumberOfPieces(1);  
   m_PolyDataMapper->SetScalarRange(0 , 0.1);  
    m_PolyDataMapper->SetColorMode(1);
    m_PolyDataMapper->SetResolveCoincidentTopology(0);
    m_PolyDataMapper->SetScalarMode(0);
+   /* VTK9 migration
    m_PolyDataMapper->SetImmediateModeRendering(1);
+  */
    m_PolyDataMapper->SetScalarVisibility(0);
    m_PolyDataMapper->SetUseLookupTableScalarRange(0);
 vtkProperty *P = vtkProperty::New();

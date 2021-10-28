@@ -203,7 +203,7 @@ int VtkImagePipe::createPipe ()
   if(tmpstrname.find(".vti") == std::string::npos)
 	    		tmpstrname.append(".vti");
 
- vtkstd::string OutputFilename = tmpstrname;
+ std::string OutputFilename = tmpstrname;
  
        double bounds[6];
        double volumeScalarBounds[2];
@@ -224,7 +224,12 @@ int VtkImagePipe::createPipe ()
        if(maxDelta<=dy){maxDelta=dy; indexDelta=ngridY;}	
        if(maxDelta<=dz){maxDelta=dz; indexDelta=ngridZ;}	
        float splatterRadius = m_visOpt.vtkSpacingFact*maxDelta*maxDelta/(indexDelta*100.0);
+       /* VTK9 migration
        popSplatter->SetInput(m_polyData);
+       */
+
+       popSplatter->SetInputData(m_polyData);
+
        popSplatter->SetSampleDimensions(ngridX,ngridY,ngridZ);
        popSplatter->SetRadius(splatterRadius);
   //   popSplatter->SetAccumulationModeToSum();
@@ -236,7 +241,10 @@ int VtkImagePipe::createPipe ()
 
        
        vtkXMLImageDataWriter *writer = vtkXMLImageDataWriter::New();
+       /* VTK9 migration
        writer->SetInput(popSplatter->GetOutput());
+       */
+       writer->SetInputData(popSplatter->GetOutput());
 
        writer->SetFileName(OutputFilename.c_str());
        writer->Write();
@@ -254,8 +262,12 @@ void VtkImagePipe::setGlyphs ( )
   
   if ( m_visOpt.nRows<max )
   {    
+           /* VTK9 migration
     m_glyph->SetInput (m_polyData );
+       */ 
     
+    m_glyph->SetInputData (m_polyData );
+
     
     if (m_visOpt.scale=="yes")      
       m_glyph->SetScaleFactor ( 0.04 );
@@ -271,7 +283,11 @@ void VtkImagePipe::setGlyphs ( )
       m_sphere   = vtkSphereSource::New();
       setResolution ( );
       setRadius ();
+      /* VTK9 migration
       m_glyph->SetSource ( m_sphere->GetOutput() );
+      */
+      m_glyph->SetSourceData( m_sphere->GetOutput() );
+
       m_sphere->Delete();
     }
     
@@ -280,7 +296,10 @@ void VtkImagePipe::setGlyphs ( )
       m_cone   = vtkConeSource::New();
       setResolution ( ); 
       setRadius ();
+       /* VTK9 migration
       m_glyph->SetSource ( m_cone->GetOutput() );
+      */
+      m_glyph->SetSourceData ( m_cone->GetOutput() );
       m_cone->Delete();
     } 
      
@@ -289,7 +308,10 @@ void VtkImagePipe::setGlyphs ( )
       m_cylinder   = vtkCylinderSource::New();
       setResolution ( ); 
       setRadius ();
+      /* VTK9 migration
       m_glyph->SetSource ( m_cylinder->GetOutput() ); 
+      */
+      m_glyph->SetSourceData ( m_cylinder->GetOutput() ); 
       m_cylinder->Delete(); 
     }
     
@@ -297,7 +319,10 @@ void VtkImagePipe::setGlyphs ( )
     {
       m_cube   = vtkCubeSource::New();
       setRadius (); 
+            /* VTK9 migration
       m_glyph->SetSource ( m_cube->GetOutput() );  
+      */
+      m_glyph->SetSourceData ( m_cube->GetOutput() );  
       m_cube->Delete();
     }
     
