@@ -159,16 +159,16 @@ all: VisIVOImporter VisIVOFilter VisIVOUtils VisIVOViewer
 
 
 VisIVOImporter: $(SRCIMPORTER)
-	$(CPP) $(CPPFLAGS) -o VisIVOImporter $(OBJIMPORTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+	$(CPP) $(CPPFLAGS) -o build/VisIVOImporter $(OBJIMPORTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
 
 VisIVOFilter: $(SRCFILTER)
-	$(CPP) $(CPPFLAGS) -o VisIVOFilter $(OBJFILTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+	$(CPP) $(CPPFLAGS) -o build/VisIVOFilter $(OBJFILTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
 
 VisIVOUtils: $(SRCVSUTILS)
-	$(CPP) $(CPPFLAGS) -o VisIVOUtils $(OBJVSUTILS) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+	$(CPP) $(CPPFLAGS) -o build/VisIVOUtils $(OBJVSUTILS) $(INCLUDE) $(LIBRARYPATH) $(LIB)
 
 VisIVOViewer: $(SRCVIEWER)
-	$(CPP) $(CPPFLAGS) -o VisIVOViewer $(OBJVIEWER) $(INCLUDE) $(LIBRARYPATH) $(LIB) $(LIBVTK)
+	$(CPP) $(CPPFLAGS) -o build/VisIVOViewer $(OBJVIEWER) $(INCLUDE) $(LIBRARYPATH) $(LIB) $(LIBVTK)
 
 clean:
-	rm -f $(ROOTIMPORTER)/*.o $(ROOTIMPORTER)/build/*.o $(ROOTFILTER)/*.o $(ROOTFILTER)/build/*.o $(ROOTVSUTILS)/*.o $(ROOTVIEWER)/*.o $(ROOTVIEWER)/build/*.o $(ROOTVSUTILS)/build/*.o $(ROOTUTILS)/*.o $(ROOTUTILS)/build/*.o ./src/Utils/build/*.o core
+	rm -f build/* $(ROOTIMPORTER)/*.o $(ROOTIMPORTER)/build/*.o $(ROOTFILTER)/*.o $(ROOTFILTER)/build/*.o $(ROOTVSUTILS)/*.o $(ROOTVIEWER)/*.o $(ROOTVIEWER)/build/*.o $(ROOTVSUTILS)/build/*.o $(ROOTUTILS)/*.o $(ROOTUTILS)/build/*.o core
