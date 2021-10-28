@@ -6,148 +6,66 @@ COMPILERCPP = /usr/bin/g++
 CC = $(COMPILER)
 CPP= $(COMPILERCPP)
 
-LD = $(COMPILERCPP)
+ROOTIMPORTER=../src/VisIVOImporter/Importers
+ROOTFILTER= ../src/VisIVOFilters/Filters
+ROOTVSUTILS= ../src/VisIVOUtils
+
+ROOTUTILS=../src/Utils
+VSINC=$(ROOTUTILS)
+
+HDF5=/usr/local
+BOOST=/opt/boost_1_75_0
+#CURL=/opt/curl7_19_4/
+CFITSIO=/opt/cfitsio-3.49
+
+SRCIMPORTER= $(ROOTIMPORTER)/abstractsource.o	$(ROOTIMPORTER)/binsource.o		$(ROOTIMPORTER)/fitsimagesource.o	$(ROOTIMPORTER)/flysource.o			$(ROOTIMPORTER)/mainImporter.o	$(ROOTIMPORTER)/ramsessource.o	$(ROOTIMPORTER)/rawpointssource.o	$(ROOTIMPORTER)/vosourcenew.o $(ROOTIMPORTER)/asciisource.o $(ROOTIMPORTER)/csvsource.o $(ROOTIMPORTER)/fitstablesource.o	$(ROOTIMPORTER)/gadgetsource.o	$(ROOTIMPORTER)/hdf5source.o $(ROOTIMPORTER)/muportalsource.o	$(ROOTIMPORTER)/rawgridsource.o $(ROOTUTILS)/tinystr.o $(ROOTUTILS)/tinyxml.o $(ROOTUTILS)/tinyxmlerror.o $(ROOTUTILS)/tinyxmlparser.o $(ROOTUTILS)/historyXmlWriter.o $(ROOTUTILS)/commandline.o $(ROOTUTILS)/visivoutils.o		
+OBJIMPORTER= $(ROOTIMPORTER)/build/abstractsource.o $(ROOTIMPORTER)/build/binsource.o $(ROOTIMPORTER)/build/fitsimagesource.o $(ROOTIMPORTER)/build/flysource.o $(ROOTIMPORTER)/build/mainImporter.o $(ROOTIMPORTER)/build/ramsessource.o $(ROOTIMPORTER)/build/rawpointssource.o $(ROOTIMPORTER)/build/vosourcenew.o $(ROOTIMPORTER)/build/asciisource.o $(ROOTIMPORTER)/build/csvsource.o $(ROOTIMPORTER)/build/fitstablesource.o $(ROOTIMPORTER)/build/gadgetsource.o $(ROOTIMPORTER)/build/hdf5source.o $(ROOTIMPORTER)/build/muportalsource.o $(ROOTIMPORTER)/build/rawgridsource.o $(ROOTUTILS)/build/tinystr.o $(ROOTUTILS)/build/tinyxml.o $(ROOTUTILS)/build/tinyxmlerror.o $(ROOTUTILS)/build/tinyxmlparser.o $(ROOTUTILS)/build/historyXmlWriter.o $(ROOTUTILS)/build/commandline.o $(ROOTUTILS)/build/visivoutils.o
+
+SRCFILTER= $(ROOTUTILS)/fparser.o $(ROOTFILTER)/vsLine.o $(ROOTFILTER)/vscoarsevolumeop.o $(ROOTFILTER)/vsmathop.o $(ROOTFILTER)/vsprinttableop.o	$(ROOTFILTER)/vsstatisticop.o $(ROOTFILTER)/fpoptimizer.o $(ROOTFILTER)/vsVector.o $(ROOTFILTER)/vscutop.o $(ROOTFILTER)/vsmergeop.o $(ROOTFILTER)/vsrandomizertableop.o $(ROOTFILTER)/vsswapop.o $(ROOTFILTER)/mainFilter.o $(ROOTFILTER)/vsVoxel.o $(ROOTFILTER)/vsdecimatorop.o $(ROOTFILTER)/vsmoduleop.o $(ROOTFILTER)/vsselectcolumnsop.o	$(ROOTUTILS)/vstable.o $(ROOTUTILS)/parametersparser.o $(ROOTFILTER)/vsaddidop.o $(ROOTFILTER)/vsexampleop.o $(ROOTFILTER)/vsmrcampos.o	$(ROOTFILTER)/vsselectfieldop.o $(ROOTFILTER)/vstableop.o $(ROOTUTILS)/tinystr.o $(ROOTFILTER)/vsextractlistrowsop.o $(ROOTFILTER)/vsmuportalop.o $(ROOTFILTER)/vsselectvol.o $(ROOTUTILS)/tinyxml.o $(ROOTFILTER)/vsextractsubvolumeop.o	$(ROOTUTILS)/vsobject.o $(ROOTFILTER)/vsshowtableop.o $(ROOTFILTER)/vsvisualop.o $(ROOTUTILS)/tinyxmlerror.o $(ROOTFILTER)/vsappend.o $(ROOTFILTER)/vsgrid2pointdistr.o	 $(ROOTFILTER)/vspointdistributeop.o $(ROOTFILTER)/vssigmacontoursop.o $(ROOTFILTER)/vsvollimit.o $(ROOTUTILS)/tinyxmlparser.o $(ROOTFILTER)/vschangecolnameop.o $(ROOTFILTER)/vsincludeop.o $(ROOTFILTER)/vspointpropertyop.o $(ROOTFILTER)/vssphereop.o $(ROOTFILTER)/vswrvotableop.o 	$(ROOTUTILS)/util.o $(ROOTFILTER)/vsclustercellop.o $(ROOTFILTER)/vsinterpolateop.o $(ROOTFILTER)/vspolarop.o $(ROOTFILTER)/vssplittableop.o $(ROOTUTILS)/historyXmlWriter.o $(ROOTFILTER)/startFilter.o
+OBJFILTER=  $(ROOTUTILS)/build/fparser.o $(ROOTFILTER)/build/vsLine.o $(ROOTFILTER)/build/vscoarsevolumeop.o  $(ROOTFILTER)/build/vsmathop.o $(ROOTFILTER)/build/vsprinttableop.o $(ROOTFILTER)/build/vsstatisticop.o $(ROOTFILTER)/build/fpoptimizer.o  $(ROOTFILTER)/build/vsVector.o $(ROOTFILTER)/build/vscutop.o  $(ROOTFILTER)/build/vsmergeop.o  $(ROOTFILTER)/build/vsrandomizertableop.o $(ROOTFILTER)/build/vsswapop.o $(ROOTFILTER)/build/mainFilter.o $(ROOTFILTER)/build/vsVoxel.o $(ROOTFILTER)/build/vsdecimatorop.o $(ROOTFILTER)/build/vsmoduleop.o $(ROOTFILTER)/build/vsselectcolumnsop.o $(ROOTUTILS)/build/vstable.o $(ROOTUTILS)/build/parametersparser.o $(ROOTFILTER)/build/vsaddidop.o $(ROOTFILTER)/build/vsexampleop.o $(ROOTFILTER)/build/vsmrcampos.o $(ROOTFILTER)/build/vsselectfieldop.o $(ROOTFILTER)/build/vstableop.o $(ROOTUTILS)/build/tinystr.o $(ROOTFILTER)/build//vsextractlistrowsop.o $(ROOTFILTER)/build//vsmuportalop.o $(ROOTFILTER)/build//vsselectvol.o  $(ROOTUTILS)/build/tinyxml.o  $(ROOTFILTER)/build//vsextractsubvolumeop.o  $(ROOTUTILS)/build//vsobject.o  $(ROOTFILTER)/build//vsshowtableop.o  $(ROOTFILTER)/build//vsvisualop.o  $(ROOTUTILS)/build/tinyxmlerror.o  $(ROOTFILTER)/build//vsappend.o  $(ROOTFILTER)/build//vsgrid2pointdistr.o $(ROOTFILTER)/build//vspointdistributeop.o $(ROOTFILTER)/build//vssigmacontoursop.o $(ROOTFILTER)/build//vsvollimit.o  $(ROOTUTILS)/build//tinyxmlparser.o  $(ROOTFILTER)/build//vschangecolnameop.o $(ROOTFILTER)/build//vsincludeop.o $(ROOTFILTER)/build//vspointpropertyop.o $(ROOTFILTER)/build//vssphereop.o  $(ROOTFILTER)/build//vswrvotableop.o  $(ROOTUTILS)/build/util.o $(ROOTFILTER)/build//vsclustercellop.o $(ROOTFILTER)/build//vsinterpolateop.o $(ROOTFILTER)/build//vspolarop.o $(ROOTFILTER)/build//vssplittableop.o  $(ROOTUTILS)/build/historyXmlWriter.o  $(ROOTFILTER)/build//startFilter.o
+
+SRCVSUTILS= $(ROOTVSUTILS)/mainUtils.o $(ROOTVSUTILS)/vscreatepath.o $(ROOTVSUTILS)/vsloadhistory.o $(ROOTVSUTILS)/vsutils.o $(ROOTVSUTILS)/vscreategenericslices.o	$(ROOTVSUTILS)/vscreateslices.o	$(ROOTVSUTILS)/vstextcol.o $(ROOTVSUTILS)/vuparametersparser.o $(ROOTUTILS)/vsobject.o $(ROOTUTILS)/visivoutils.o $(ROOTUTILS)/fparser.o  $(ROOTUTILS)/tinystr.o $(ROOTUTILS)/tinyxml.o $(ROOTUTILS)/tinyxmlerror.o $(ROOTUTILS)/tinyxmlparser.o $(ROOTUTILS)/parametersparser.o $(ROOTUTILS)/vstable.o
+OBJVSUTILS= $(ROOTVSUTILS)/build/mainUtils.o $(ROOTVSUTILS)/build/vscreatepath.o $(ROOTVSUTILS)/build/vsloadhistory.o $(ROOTVSUTILS)/build//vsutils.o $(ROOTVSUTILS)/build/vscreategenericslices.o $(ROOTVSUTILS)/build/vscreateslices.o $(ROOTVSUTILS)/build/vstextcol.o $(ROOTVSUTILS)/build/vuparametersparser.o $(ROOTUTILS)/build/vsobject.o $(ROOTUTILS)/build/visivoutils.o $(ROOTUTILS)/build/fparser.o  $(ROOTUTILS)/build/tinystr.o $(ROOTUTILS)/build//tinyxml.o $(ROOTUTILS)/build//tinyxmlerror.o $(ROOTUTILS)/build//tinyxmlparser.o $(ROOTUTILS)/build/parametersparser.o $(ROOTUTILS)/build/vstable.o
+
+
+
+INCLUDE = -I$(ROOTIMPORTER) -I$(ROOTFILTER) -I$(VSINC) -I/opt/local/include/ -I/usr/local/include/ -I$(CFITSIO)/include/ -I$(HDF5)/include/ -I$(CURL)/include
 
 
 
 
-VSVIEW=	isosurfacepipe.o	pipe.o		pointspipe.o		slicerpipe.o		splotchpipecamera.o	volumepipe.o			vtkimagepipe.o 	pointssmoothpipe.o	splotchpipe.o		vectorpipe.o			volumeslicer.o		./Splotch/kernel/transform.o ./Splotch/cxxsupport/announce.o		./Splotch/cxxsupport/ls_image.o		./Splotch/cxxsupport/paramfile.o		./Splotch/cxxsupport/walltimer.o ./Splotch/cxxsupport/error_handling.o	./Splotch/cxxsupport/mpi_support.o	./Splotch/cxxsupport/string_utils.o ./Splotch/reader/bin_reader.o			./Splotch/reader/gadget_reader.o		./Splotch/reader/mesh_reader.o			./Splotch/reader/visivo_reader.o ./Splotch/reader/bin_reader_mpi.o			./Splotch/reader/millenium_reader.o		./Splotch/reader/tipsy_reader.o   ./Splotch/reader/ramses_reader.o ./Splotch/splotch/scenemaker.o		./Splotch/splotch/splotch_host.o ./Splotch/splotch/splotch.o		./Splotch/splotch/splotchutils.o ./Splotch/booster/m_rotation.o		./Splotch/booster/mesh_creator.o		./Splotch/booster/p_selector.o		./Splotch/booster/randomizer.o ./Splotch/c_utils/walltime_c.o ../../Utils/color.o								../../Utils/tinyxml.o			../../Utils/visivoutils.o 		../../Utils/historyXmlWriter.o		../../Utils/tinyxmlerror.o		../../Utils/vsobject.o ../../Utils/extendedglyph3d.o		../../Utils/luteditor.o				../../Utils/tinyxmlparser.o		../../VisIVOFilters/Filters/vstable.o 			../../Utils/optionssetter.o		../../Utils/tinystr.o		../../VisIVOFilters/Filters/vsstatisticop.o ../../VisIVOFilters/Filters/vstableop.o
 
-
-OBJS=	isosurfacepipe.o	pipe.o		pointspipe.o		slicerpipe.o		splotchpipecamera.o	volumepipe.o			vtkimagepipe.o mainViewer.o		pointssmoothpipe.o	splotchpipe.o		vectorpipe.o			volumeslicer.o		transform.o  announce.o	 ls_image.o	 paramfile.o	 walltimer.o  error_handling.o	 mpi_support.o	 string_utils.o  bin_reader.o		 gadget_reader.o		 mesh_reader.o			 visivo_reader.o  bin_reader_mpi.o	 millenium_reader.o		 tipsy_reader.o ramses_reader.o scenemaker.o		 splotch_host.o  splotch.o		 splotchutils.o  m_rotation.o		 mesh_creator.o		 p_selector.o	 randomizer.o walltime_c.o color.o	 tinyxml.o		 visivoutils.o 		 historyXmlWriter.o		 tinyxmlerror.o		 vsobject.o  extendedglyph3d.o		 luteditor.o		 tinyxmlparser.o	 vstable.o 		 optionssetter.o		 tinystr.o		 vsstatisticop.o  vstableop.o
-
-
-
-INCLUDE = -I/usr/local/Cellar/boost/1.59.0/include -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer -I/Users/ube/VisIVOServer_OACT/2.3/Utils -I/usr/local/include -I/opt/local/include -I/opt/vtk5/include/vtk-5.10 -I/Users/ube/VisIVOServer_OACT/2.3 -I/Users/ube/VisIVOServer_OACT/2.3/Utils -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer/Splotch -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer/Splotch/c_utils -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer/pipe -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOUtils 
-
-#CPPFLAGS= -DLIGHT $(INCLUDE)
-
-CPPFLAGS= -DSPLVISIVO -DLIGHT -DMAC
-
-LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib -L/opt/vtk5/lib/vtk-5.10
-##LIB = -lcurl -lhdf5 -lcfitsio -lm
-LIB = -lvtkRendering -lvtkHybrid -lvtkVolumeRendering -lvtkexoIIc -lvtkRendering -lvtkGraphics -lvtkverdict -lvtkImaging -lvtkftgl -lvtkfreetype -lvtkIO -lvtkFiltering -lvtkCommon -lvtkDICOMParser -lvtkNetCDF -lvtkmetaio -lvtksqlite -lpthread -lvtkpng -lvtkzlib -lvtkjpeg -lm -lvtkexpat -lvtksys -ldl -ltiff -lvtkfreetype -lcurl
-
-LDFLAGS= -framework CoreServices -framework ApplicationServices -framework Cocoa -framework Foundation -framework IOKit -framework Carbon -framework OpenGL 
-
-all: VisIVOViewer
- 
-.SUFFIXES : .o .cpp .cc .c .cxx
-
-.cpp.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
-
-.cc.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
-
-.c.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
-
-.cxx.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
-
-VisIVOViewer: $(VSVIEW)
-	$(LD) $(CPPFLAGS) -o VisIVOViewer $(OBJS) $(LDFLAGS) $(INCLUDE) $(LIBRARYPATH) $(LIB)
-
-	
-clean:
-	rm -f *.o ../../Utils/*.o ./Splotch/kernel/*.o ./Splotch/cxxsupport/*.o		./Splotch/reader/*.o ./Splotch/splotch/*o	./Splotch/booster/*.o		../../VisIVOFilters/Filters/vstable.o 	../../VisIVOFilters/Filters/vsstatisticop.o ../../VisIVOFilters/Filters/vstableop.o core
-
-==================================
-
-VSFILINC1=/Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters
-VSFILINC2=/Users/ube/VisIVOServer_OACT/2.3/Utils
-
-VSFIL= ../../Utils/fparser.o	vsLine.o			vscoarsevolumeop.o		vsmathop.o			vsprinttableop.o	vsstatisticop.o 	fpoptimizer.o		vsVector.o			vscutop.o			vsmergeop.o			vsrandomizertableop.o		vsswapop.o mainFilter.o			vsVoxel.o			vsdecimatorop.o		vsmoduleop.o	vsselectcolumnsop.o		vstable.o ../../Utils/parametersparser.o		vsaddidop.o		vsexampleop.o		vsmrcampos.o	vsselectfieldop.o		vstableop.o ../../Utils/tinystr.o		vsextractlistrowsop.o		vsmuportalop.o		vsselectvol.o			 ../../Utils/tinyxml.o				vsextractsubvolumeop.o	vsobject.o			vsshowtableop.o		vsvisualop.o ../../Utils/tinyxmlerror.o		vsappend.o			vsgrid2pointdistr.o		vspointdistributeop.o		vssigmacontoursop.o		vsvollimit.o ../../Utils/tinyxmlparser.o		vschangecolnameop.o		vsincludeop.o			vspointpropertyop.o		vssphereop.o			vswrvotableop.o 	../../Utils/util.o			vsclustercellop.o		vsinterpolateop.o		vspolarop.o		vssplittableop.o ../../Utils/historyXmlWriter.o startFilter.o
-
-INCLUDE = -I$(VSFILINC1) -I$(VSFILINC2)
-#INCLUDE = -I$(GAIAINC) 
-#CFLAGS= $(INCLUDE)  -std=c99 
-#CPPFLAGS= $(INCLUDE) -g -fsanitize=address -mllvm -asan-stack
-CPPFLAGS= $(INCLUDE) 
-LIB =  -lm
-
-
-all: VisIVOFilter 
-
-VisIVOFilter: $(VSFIL)
-	$(CPP) $(CPPFLAGS) -o VisIVOFilter $(VSFIL) $(INCLUDE) $(LIB)
-
-
-	
-clean:
-	rm -f *.o ../../Utils/*.o core
-
-===============================
-
-# Gaia GSRPar Makefile
-
-COMPILER = /usr/bin/g++
-COMPILERCPP = /usr/bin/g++
-
-CC = $(COMPILER)
-CPP= $(COMPILERCPP)
-
-
-
-VSFILINC1=/Users/ube/VisIVOServer_OACT/2.3/VisIVOImporter/Importers
-VSFILINC2=/Users/ube/VisIVOServer_OACT/2.3/Utils
-
-VSFIL=	abstractsource.o	binsource.o		fitsimagesource.o	flysource.o			mainImporter.o	ramsessource.o	rawpointssource.o	vosourcenew.o asciisource.o		csvsource.o		fitstablesource.o	gadgetsource.o	hdf5source.o		muportalsource.o	rawgridsource.o ../../Utils/tinystr.o		../../Utils/tinyxml.o		../../Utils/tinyxmlerror.o	../../Utils/tinyxmlparser.o	../../Utils/historyXmlWriter.o ../../Utils/commandline.o ../../Utils/visivoutils.o		
-
-
-INCLUDE = -I$(VSFILINC1) -I$(VSFILINC2) -I/opt/local/include/ -I/usr/local/include/ -I/usr/local/Cellar/boost/1.59.0/include 
-#INCLUDE = -I$(GAIAINC) 
-#CFLAGS= $(INCLUDE)  -std=c99 
-#CPPFLAGS= $(INCLUDE) -g -fsanitize=address -mllvm -asan-stack
-CPPFLAGS= -DLIGHT $(INCLUDE)
-LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib 
+CPPFLAGS= -DLIGHT
+LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib -L$(HDF5)/lib -L$(CURL)/lib -L$(CFITSIO)/lib
 LIB = -lcurl -lhdf5 -lcfitsio -lm
 
 
-all: VisIVOFilter 
+all: VisIVOImporter VisIVOFilter VisIVOUtils
 
-VisIVOFilter: $(VSFIL)
-	$(CPP) $(CPPFLAGS) -o VisIVOFilter $(VSFIL) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+.SUFFIXES : .o .cpp .cc .c .cxx
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(dir $@)build/$(notdir $@)
+
+.cc.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(dir $@)build/$(notdir $@)
+
+.c.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(dir $@)build/$(notdir $@)
+
+.cxx.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(dir $@)build/$(notdir $@)
 
 
-	
+
+VisIVOImporter: $(SRCIMPORTER)
+	$(CPP) $(CPPFLAGS) -o VisIVOImporter $(OBJIMPORTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+
+VisIVOFilter: $(SRCFILTER)
+	$(CPP) $(CPPFLAGS) -o VisIVOFilter $(OBJFILTER) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+
+VisIVOUtils: $(SRCVSUTILS)
+	$(CPP) $(CPPFLAGS) -o VisIVOUtils $(OBJVSUTILS) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+
 clean:
-	rm -f *.o ../../Utils/*.o core
-
-=====================================
-
-# Gaia GSRPar Makefile
-
-COMPILER = /usr/bin/g++
-COMPILERCPP = /usr/bin/g++
-
-CC = $(COMPILER)
-CPP= $(COMPILERCPP)
-
-
-
-VSUTIINC1=/Users/ube/VisIVOServer_OACT/2.3/VisIVOUtils
-VSUTIINC2=/Users/ube/VisIVOServer_OACT/2.3/Utils
-VSUTIINC3=/usr/local/Cellar/boost/1.59.0/include
-
-
-VSUTI= mainUtils.o			vscreatepath.o		vsloadhistory.o		vsutils.o vscreategenericslices.o	vscreateslices.o		vstextcol.o			vuparametersparser.o ../Utils/vsobject.o ../Utils/visivoutils.o ../Utils/fparser.o  ../Utils/tinystr.o ../Utils/tinyxml.o ../Utils/tinyxmlerror.o ../Utils/tinyxmlparser.o ../Utils/parametersparser.o ../VisIVOFilters/Filters/vstable.o
-
-INCLUDE = -I$(VSUTIINC3) -I$(VSUTIINC1) -I$(VSUTIINC2)
-#INCLUDE = -I$(GAIAINC) 
-#CFLAGS= $(INCLUDE)  -std=c99 
-#CPPFLAGS= $(INCLUDE) -g -fsanitize=address -mllvm -asan-stack
-CPPFLAGS= $(INCLUDE) 
-LIB =  -l curl -lm
-
-
-all: VisIVOUtils 
-
-VisIVOUtils: $(VSUTI)
-	$(CPP) $(CPPFLAGS) -o VisIVOUtils $(VSUTI) $(INCLUDE) $(LIB)
-
-
-	
-clean:
-	rm -f *.o ../../Utils/*.o core
+	rm -f $(ROOTIMPORTER)/*.o $(ROOTIMPORTER)/build/*.o $(ROOTFILTER)/*.o $(ROOTFILTER)/build/*.o $(ROOTVSUTILS)/*.o $(ROOTVSUTILS)/build/*.o $(ROOTUTILS)/*.o $(ROOTUTILS)/build/*.o ../src/Utils/build/*.o core

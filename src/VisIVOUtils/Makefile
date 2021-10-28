@@ -1,5 +1,3 @@
-# Gaia GSRPar Makefile
-
 COMPILER = /usr/bin/g++
 COMPILERCPP = /usr/bin/g++
 
@@ -16,8 +14,7 @@ FILTERS=$(ROOTUTILS)/../VisIVOFilters/Filters/
 CURL=/usr/
 
 SRC= mainUtils.o			vscreatepath.o		vsloadhistory.o		vsutils.o vscreategenericslices.o	vscreateslices.o		vstextcol.o			vuparametersparser.o ../Utils/vsobject.o ../Utils/visivoutils.o ../Utils/fparser.o  ../Utils/tinystr.o ../Utils/tinyxml.o ../Utils/tinyxmlerror.o ../Utils/tinyxmlparser.o ../Utils/parametersparser.o ../Utils/vstable.o
-
-OBJ= $(BUILDDIR)/mainUtils.o $(BUILDDIR)/vscreatepath.o $(BUILDDIR)/vsloadhistory.o $(BUILDDIR)/vsutils.o $(BUILDDIR)/vscreategenericslices.o $(BUILDDIR)/vscreateslices.o $(BUILDDIR)/vstextcol.o $(BUILDDIR)/vuparametersparser.o $(BUILDDIR)/vsobject.o $(BUILDDIR)/visivoutils.o $(BUILDDIR)/fparser.o  $(BUILDDIR)/tinystr.o $(BUILDDIR)/tinyxml.o $(BUILDDIR)/tinyxmlerror.o $(BUILDDIR)/tinyxmlparser.o $(BUILDDIR)/parametersparser.o $(BUILDDIR)/vstable.o
+OBJ= $(ROOTFILTER)/build//mainUtils.o $(ROOTFILTER)/build//vscreatepath.o $(ROOTFILTER)/build//vsloadhistory.o $(ROOTFILTER)/build//vsutils.o $(ROOTFILTER)/build//vscreategenericslices.o $(ROOTFILTER)/build//vscreateslices.o $(ROOTFILTER)/build//vstextcol.o $(ROOTFILTER)/build//vuparametersparser.o $(ROOTFILTER)/build//vsobject.o $(ROOTFILTER)/build//visivoutils.o $(ROOTFILTER)/build//fparser.o  $(ROOTFILTER)/build//tinystr.o $(ROOTFILTER)/build//tinyxml.o $(ROOTFILTER)/build//tinyxmlerror.o $(ROOTFILTER)/build//tinyxmlparser.o $(ROOTFILTER)/build//parametersparser.o $(ROOTFILTER)/build//vstable.o
 
 INCLUDE = -I$(ROOTUTILS) -I$(VSINC1) -I$(BOOST) -I$(FILTERS) 
 CPPFLAGS= -DLIGHT 
@@ -29,16 +26,16 @@ all: VisIVOUtils
 .SUFFIXES : .o .cpp .cc .c .cxx
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(BUILDDIR)/$(notdir $@)
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTFILTER)/build//$(notdir $@)
 
 .cc.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(BUILDDIR)/$(notdir $@)
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTFILTER)/build//$(notdir $@)
 
 .c.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(BUILDDIR)/$(notdir $@)
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTFILTER)/build//$(notdir $@)
 
 .cxx.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(BUILDDIR)/$(notdir $@)
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTFILTER)/build//$(notdir $@)
 
 
 VisIVOUtils: $(SRC)
