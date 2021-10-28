@@ -1,0 +1,12 @@
+
+.DS_Store
+src/Utils/build/*
+src/VisIVOFilters/Filters/build/*
+src/VisIVOImporter/Importers/build/*
+src/VisIVOUtils/build/*
+build/VisIVOFilter
+build/VisIVOUtils
+build/VisIVOImporter
+src/VisIVOViewer/Viewer/build/*
+src/VisIVOUtils/build/
+src/VisIVOViewer/Viewer/build/

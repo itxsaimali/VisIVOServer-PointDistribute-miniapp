@@ -1,0 +1,61 @@
+# Gaia GSRPar Makefile
+
+COMPILER = /usr/bin/g++
+COMPILERCPP = /usr/bin/g++
+
+CC = $(COMPILER)
+CPP= $(COMPILERCPP)
+
+
+ROOT=/Users/ube/VisIVOServer_OACT/2.3/
+ROOTFIL=/Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters/
+ROOTUTIL=/Users/ube/VisIVOServer_OACT/2.3/VisIVOUtils/
+ROOTVIEW=/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer/
+ROOTIMP=/Users/ube/VisIVOServer_OACT/2.3/VisIVOImporter/Importers/
+UTILS=/Users/ube/VisIVOServer_OACT/2.3/Utils/
+
+VSFILINC1=$(ROOTFIL)
+VSFILINC2=$(UTILS)
+INCLUDE = -I/usr/local/Cellar/boost/1.59.0/include -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewers/Viewer -I/Users/ube/VisIVOServer_OACT/2.3/Utils -I/usr/local/include -I/opt/local/include -I/opt/vtk5/include/vtk-5.10 -I/Users/ube/VisIVOServer_OACT/2.3 -I/Users/ube/VisIVOServer_OACT/2.3/Utils -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewers/Viewer/Splotch -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewers/Viewer/Splotch/c_utils -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewers/Viewer/pipe -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOUtils -I/Users/ube/VisIVOServer_OACT/2.3/Utils/ -I/Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters/
+
+
+API=     $(ROOT)/API/visivoset.o $(ROOT)/visivoview.o $(ROOT)/API/visivoimp.o $(ROOT)/API/visivofil.o  	$(ROOTFIL)/vsLine.o			$(ROOTFIL)/vscoarsevolumeop.o		$(ROOTFIL)/vsmathop.o			$(ROOTFIL)/vsprinttableop.o	$(ROOTFIL)/vsstatisticop.o 	$(ROOTFIL)/fpoptimizer.o		$(ROOTFIL)/vsVector.o			$(ROOTFIL)/vscutop.o			$(ROOTFIL)/vsmergeop.o			$(ROOTFIL)/vsrandomizertableop.o					$(ROOTFIL)/vsVoxel.o			$(ROOTFIL)/vsdecimatorop.o		$(ROOTFIL)/vsmoduleop.o	$(ROOTFIL)/vsselectcolumnsop.o		$(ROOTFIL)/vstable.o $(UTILS)/parametersparser.o		$(ROOTFIL)/vsaddidop.o		$(ROOTFIL)/vsexampleop.o		$(ROOTFIL)/vsmrcampos.o	$(ROOTFIL)/vsselectfieldop.o		$(ROOTFIL)/vstableop.o $(UTILS)/tinystr.o		$(ROOTFIL)/vsextractlistrowsop.o		$(ROOTFIL)/vsmuportalop.o		$(ROOTFIL)/vsselectvol.o			 $(UTILS)/tinyxml.o				$(ROOTFIL)/vsextractsubvolumeop.o	$(UTILS)/vsobject.o			$(ROOTFIL)/vsshowtableop.o		$(ROOTFIL)/vsvisualop.o $(UTILS)/tinyxmlerror.o		$(ROOTFIL)/vsappend.o			$(ROOTFIL)/vsgrid2pointdistr.o		$(ROOTFIL)/vspointdistributeop.o		$(ROOTFIL)/vssigmacontoursop.o		$(ROOTFIL)/vsvollimit.o $(UTILS)/tinyxmlparser.o		$(ROOTFIL)/vschangecolnameop.o		$(ROOTFIL)/vsincludeop.o			$(ROOTFIL)/vspointpropertyop.o		$(ROOTFIL)/vssphereop.o			$(ROOTFIL)/vswrvotableop.o 	$(UTILS)/util.o			$(ROOTFIL)/vsclustercellop.o		$(ROOTFIL)/vsinterpolateop.o		$(ROOTFIL)/vspolarop.o		$(ROOTFIL)/vssplittableop.o $(UTILS)/historyXmlWriter.o $(ROOTFIL)/startFilter.o $(UTILS)/fparser.o $(ROOTVIEW)/pointspipe.o $(ROOTVIEW)/slicerpipe.o 
+
+
+OBJS=  visivoset.o visivoview.o visivoimp.o visivofil.o  	vsLine.o			 vscoarsevolumeop.o		 vsmathop.o			 vsprinttableop.o	 vsstatisticop.o 	 fpoptimizer.o		 vsVector.o			 vscutop.o			 vsmergeop.o			 vsrandomizertableop.o					 vsVoxel.o			 vsdecimatorop.o		 vsmoduleop.o	 vsselectcolumnsop.o		 vstable.o  parametersparser.o		 vsaddidop.o		 vsexampleop.o		 vsmrcampos.o	 vsselectfieldop.o		 vstableop.o  tinystr.o		 vsextractlistrowsop.o		 vsmuportalop.o		 vsselectvol.o			  tinyxml.o				 vsextractsubvolumeop.o	 vsobject.o			 vsshowtableop.o		 vsvisualop.o  tinyxmlerror.o		 vsappend.o			 vsgrid2pointdistr.o		 vspointdistributeop.o		 vssigmacontoursop.o		 vsvollimit.o  tinyxmlparser.o		 vschangecolnameop.o		 vsincludeop.o			 vspointpropertyop.o		 vssphereop.o			 vswrvotableop.o 	 util.o			 vsclustercellop.o		 vsinterpolateop.o		 vspolarop.o		 vssplittableop.o  historyXmlWriter.o  startFilter.o  fparser.o pointspipe.o slicerpipe.o
+
+CPPFLAGS= -DSPLVISIVO -DLIGHT -DMAC
+
+LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib -L/opt/vtk5/lib/vtk-5.10
+##LIB = -lcurl -lhdf5 -lcfitsio -lm
+LIB = -lvtkRendering -lvtkHybrid -lvtkVolumeRendering -lvtkexoIIc -lvtkRendering -lvtkGraphics -lvtkverdict -lvtkImaging -lvtkftgl -lvtkfreetype -lvtkIO -lvtkFiltering -lvtkCommon -lvtkDICOMParser -lvtkNetCDF -lvtkmetaio -lvtksqlite -lpthread -lvtkpng -lvtkzlib -lvtkjpeg -lm -lvtkexpat -lvtksys -ldl -ltiff -lvtkfreetype -lcurl
+
+LDFLAGS= -framework CoreServices -framework ApplicationServices -framework Cocoa -framework Foundation -framework IOKit -framework Carbon -framework OpenGL 
+
+CPPFLAGS= $(INCLUDE) 
+
+
+
+all: VisIVOApi 
+
+.SUFFIXES : .o .cpp .cc .c .cxx
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
+
+.cc.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
+
+.c.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
+
+.cxx.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< 
+
+VisIVOApi:  $(API) $(VSFIL)
+	ar -c  libVisIVOApi.a $(OBJS) $(LDFLAGS)  $(LIBRARYPATH) $(LIB)
+
+
+	
+clean:
+	rm -f *.o ../../Utils/*.o core

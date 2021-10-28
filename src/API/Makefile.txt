@@ -1,0 +1,65 @@
+# Gaia GSRPar Makefile
+
+COMPILER = /usr/bin/g++
+COMPILERCPP = /usr/bin/g++
+
+CC = $(COMPILER)
+CPP= $(COMPILERCPP)
+
+LD = $(COMPILERCPP)
+
+ROOTVIEWER= /Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer
+ROOTIMPORTER=/Users/ube/VisIVOServer_OACT/2.3/VisIVOImporter/Importers
+ROOTFILTER= /Users/ube/VisIVOServer_OACT/2.3/VisIVOFilters/Filters
+BUILDDIR=$(ROOTIMPORTER)/build
+
+
+VSFILINC1=/Users/ube/VisIVOServer_OACT/2.3/VisIVOViewer/Viewer
+VSFILINC2=/Users/ube/VisIVOServer_OACT/2.3/Utils
+
+VTKDIR=/opt/vtk5/
+CURLDIR=/usr/local/
+
+VSAPI=	visivofil.o	visivoimp.o	visivoset.o	visivoview.o
+
+OBJS=	$(ROOTVIEWER)/build/isosurfacepipe.o $(ROOTVIEWER)/build/pipe.o $(ROOTVIEWER)/build/pointspipe.o $(ROOTVIEWER)/build/slicerpipe.o $(ROOTVIEWER)/build/splotchpipecamera.o $(ROOTVIEWER)/build/volumepipe.o $(ROOTVIEWER)/build/vtkimagepipe.o $(ROOTVIEWER)/build/mainViewer.o $(ROOTVIEWER)/build/pointssmoothpipe.o $(ROOTVIEWER)/build/splotchpipe.o $(ROOTVIEWER)/build/vectorpipe.o $(ROOTVIEWER)/build/volumeslicer.o $(ROOTVIEWER)/build/transform.o $(ROOTVIEWER)/build/announce.o $(ROOTVIEWER)/build/ls_image.o $(ROOTVIEWER)/build/paramfile.o $(ROOTVIEWER)/build/walltimer.o $(ROOTVIEWER)/build/error_handling.o $(ROOTVIEWER)/build/mpi_support.o $(ROOTVIEWER)/build/string_utils.o $(ROOTVIEWER)/build/bin_reader.o $(ROOTVIEWER)/build/gadget_reader.o $(ROOTVIEWER)/build/mesh_reader.o $(ROOTVIEWER)/build/visivo_reader.o $(ROOTVIEWER)/build/bin_reader_mpi.o $(ROOTVIEWER)/build/millenium_reader.o $(ROOTVIEWER)/build/tipsy_reader.o $(ROOTVIEWER)/build/ramses_reader.o $(ROOTVIEWER)/build/scenemaker.o $(ROOTVIEWER)/build/splotch_host.o $(ROOTVIEWER)/build/splotch.o $(ROOTVIEWER)/build/splotchutils.o $(ROOTVIEWER)/build/m_rotation.o $(ROOTVIEWER)/build/mesh_creator.o $(ROOTVIEWER)/build/p_selector.o $(ROOTVIEWER)/build/randomizer.o $(ROOTVIEWER)/build/walltime_c.o $(ROOTVIEWER)/build/color.o $(ROOTVIEWER)/build/tinyxml.o $(ROOTVIEWER)/build/visivoutils.o $(ROOTVIEWER)/build/historyXmlWriter.o $(ROOTVIEWER)/build/tinyxmlerror.o $(ROOTVIEWER)/build/vsobject.o $(ROOTVIEWER)/build/extendedglyph3d.o $(ROOTVIEWER)/build/luteditor.o $(ROOTVIEWER)/build/tinyxmlparser.o $(ROOTVIEWER)/build/vstable.o $(ROOTVIEWER)/build/optionssetter.o $(ROOTVIEWER)/build/tinystr.o $(ROOTVIEWER)/build/vsstatisticop.o $(ROOTVIEWER)/build/vstableop.o 
+
+$(ROOTIMPORTER)/build/abstractsource.o $(ROOTIMPORTER)/build/binsource.o $(ROOTIMPORTER)/build/fitsimagesource.o $(ROOTIMPORTER)/build/flysource.o $(ROOTIMPORTER)/build/mainImporter.o $(ROOTIMPORTER)/build/ramsessource.o $(ROOTIMPORTER)/build/rawpointssource.o $(ROOTIMPORTER)/build/vosourcenew.o $(ROOTIMPORTER)/build/asciisource.o $(ROOTIMPORTER)/build/csvsource.o $(ROOTIMPORTER)/build/fitstablesource.o $(ROOTIMPORTER)/build/gadgetsource.o $(ROOTIMPORTER)/build/hdf5source.o $(ROOTIMPORTER)/build/muportalsource.o $(ROOTIMPORTER)/build/rawgridsource.o $(ROOTIMPORTER)/build/tinystr.o $(ROOTIMPORTER)/build/tinyxml.o $(ROOTIMPORTER)/build/tinyxmlerror.o $(ROOTIMPORTER)/build/tinyxmlparser.o $(ROOTIMPORTER)/build/historyXmlWriter.o $(ROOTIMPORTER)/build/commandline.o $(ROOTIMPORTER)/build/visivoutils.o
+
+$(ROOTFILTER)/build//fparser.o  $(ROOTFILTER)/build//vsLine.o  $(ROOTFILTER)/build//vscoarsevolumeop.o  $(ROOTFILTER)/build//vsmathop.o $(ROOTFILTER)/build//vsprinttableop.o $(ROOTFILTER)/build//vsstatisticop.o $(ROOTFILTER)/build//fpoptimizer.o  $(ROOTFILTER)/build//vsVector.o $(ROOTFILTER)/build//vscutop.o  $(ROOTFILTER)/build//vsmergeop.o  $(ROOTFILTER)/build//vsrandomizertableop.o $(ROOTFILTER)/build//vsswapop.o $(ROOTFILTER)/build//mainFilter.o $(ROOTFILTER)/build//vsVoxel.o $(ROOTFILTER)/build//vsdecimatorop.o $(ROOTFILTER)/build//vsmoduleop.o $(ROOTFILTER)/build//vsselectcolumnsop.o $(ROOTFILTER)/build//vstable.o $(ROOTFILTER)/build//parametersparser.o $(ROOTFILTER)/build//vsaddidop.o $(ROOTFILTER)/build//vsexampleop.o $(ROOTFILTER)/build//vsmrcampos.o $(ROOTFILTER)/build//vsselectfieldop.o $(ROOTFILTER)/build//vstableop.o $(ROOTFILTER)/build//tinystr.o $(ROOTFILTER)/build//vsextractlistrowsop.o $(ROOTFILTER)/build//vsmuportalop.o $(ROOTFILTER)/build//vsselectvol.o  $(ROOTFILTER)/build//tinyxml.o  $(ROOTFILTER)/build//vsextractsubvolumeop.o  $(ROOTFILTER)/build//vsobject.o  $(ROOTFILTER)/build//vsshowtableop.o  $(ROOTFILTER)/build//vsvisualop.o  $(ROOTFILTER)/build//tinyxmlerror.o  $(ROOTFILTER)/build//vsappend.o  $(ROOTFILTER)/build//vsgrid2pointdistr.o $(ROOTFILTER)/build//vspointdistributeop.o $(ROOTFILTER)/build//vssigmacontoursop.o $(ROOTFILTER)/build//vsvollimit.o  $(ROOTFILTER)/build//tinyxmlparser.o  $(ROOTFILTER)/build//vschangecolnameop.o $(ROOTFILTER)/build//vsincludeop.o $(ROOTFILTER)/build//vspointpropertyop.o $(ROOTFILTER)/build//vssphereop.o  $(ROOTFILTER)/build//vswrvotableop.o  $(ROOTFILTER)/build//util.o $(ROOTFILTER)/build//vsclustercellop.o $(ROOTFILTER)/build//vsinterpolateop.o $(ROOTFILTER)/build//vspolarop.o $(ROOTFILTER)/build//vssplittableop.o  $(ROOTFILTER)/build//historyXmlWriter.o  $(ROOTFILTER)/build//startFilter.o
+
+
+
+INCLUDE = -I$(VSFILINC1) -I$(VSFILINC2) -I$(VSFILINC1)/../../  -I/usr/local/include -I/opt/local/include -I$(VTKDIR)/include/vtk-5.10 -I$(VSFILINC2) -I$(VSFILINC1)/Splotch -I$(VSFILINC1)/Splotch/c_utils -I$(VSFILINC1)/../../VisIVOFilters/Filters -I$(VSFILINC1)/../../VisIVOUtils -I$(CURLDIR)/include/
+
+#CPPFLAGS= -DLIGHT $(INCLUDE)
+
+CPPFLAGS= -DSPLVISIVO -DLIGHT -DMAC
+
+LIBRARYPATH =-L/usr/local/lib -L/opt/local/lib -L$(VTKDIR)/lib/vtk-5.10 -L$(CURLDIR)/lib
+LIB = -lvtkRendering -lvtkHybrid -lvtkVolumeRendering -lvtkexoIIc -lvtkRendering -lvtkGraphics -lvtkverdict -lvtkImaging -lvtkftgl -lvtkfreetype -lvtkIO -lvtkFiltering -lvtkCommon -lvtkDICOMParser -lvtkNetCDF -lvtkmetaio -lvtksqlite -lpthread -lvtkpng -lvtkzlib -lvtkjpeg -lm -lvtkexpat -lvtksys -ldl -ltiff -lvtkhdf5 -lvtkhdf5_hl -lvtkNetCDF_cxx -lLSDyna -lvtkfreetype -lcurl
+
+LDFLAGS= -framework CoreServices -framework ApplicationServices -framework Cocoa -framework Foundation -framework IOKit -framework Carbon -framework OpenGL 
+
+all: VisIVOViewer
+ 
+.SUFFIXES : .o .cpp .cc .c .cxx
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTVIEWER)/build/$(notdir $@)
+
+.cc.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTVIEWER)/build/$(notdir $@)
+
+.c.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTVIEWER)/build/$(notdir $@)
+
+.cxx.o:
+	$(CPP) $(CPPFLAGS) $(INCLUDE)  -c $< -o $(ROOTVIEWER)/build/$(notdir $@)
+
+VisIVOViewer: $(VSVIEW)
+	$(LD) $(CPPFLAGS) -o VisIVOViewer $(OBJS) $(LDFLAGS) $(INCLUDE) $(LIBRARYPATH) $(LIB)
+
+	
+clean:
+	rm -f *.o build/*.o ../../Utils/*.o ./Splotch/kernel/*.o ./Splotch/cxxsupport/*.o		./Splotch/reader/*.o ./Splotch/splotch/*o	./Splotch/booster/*.o		../../VisIVOFilters/Filters/vstable.o 	../../VisIVOFilters/Filters/vsstatisticop.o ../../VisIVOFilters/Filters/vstableop.o core
