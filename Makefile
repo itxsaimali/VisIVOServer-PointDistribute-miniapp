@@ -6,13 +6,13 @@ COMPILERCPP = /usr/bin/g++
 CC = $(COMPILER)
 CPP= $(COMPILERCPP)
 
-ROOTIMPORTER=../src/VisIVOImporter/Importers
-ROOTFILTER= ../src/VisIVOFilters/Filters
-ROOTVSUTILS= ../src/VisIVOUtils
-ROOTVIEWER= ../src/VisIVOViewer/Viewer
+ROOTIMPORTER=./src/VisIVOImporter/Importers
+ROOTFILTER= ./src/VisIVOFilters/Filters
+ROOTVSUTILS= ./src/VisIVOUtils
+ROOTVIEWER= ./src/VisIVOViewer/Viewer
 
-ROOTUTILS=../src/Utils
-VSINC=../src/
+ROOTUTILS=./src/Utils
+VSINC=./src/
 
 HDF5=/usr/local
 BOOST=/opt/boost_1_75_0
@@ -171,4 +171,4 @@ VisIVOViewer: $(SRCVIEWER)
 	$(CPP) $(CPPFLAGS) -o VisIVOViewer $(OBJVIEWER) $(INCLUDE) $(LIBRARYPATH) $(LIB) $(LIBVTK)
 
 clean:
-	rm -f $(ROOTIMPORTER)/*.o $(ROOTIMPORTER)/build/*.o $(ROOTFILTER)/*.o $(ROOTFILTER)/build/*.o $(ROOTVSUTILS)/*.o $(ROOTVIEWER)/*.o $(ROOTVIEWER)/build/*.o $(ROOTVSUTILS)/build/*.o $(ROOTUTILS)/*.o $(ROOTUTILS)/build/*.o ../src/Utils/build/*.o core
+	rm -f $(ROOTIMPORTER)/*.o $(ROOTIMPORTER)/build/*.o $(ROOTFILTER)/*.o $(ROOTFILTER)/build/*.o $(ROOTVSUTILS)/*.o $(ROOTVIEWER)/*.o $(ROOTVIEWER)/build/*.o $(ROOTVSUTILS)/build/*.o $(ROOTUTILS)/*.o $(ROOTUTILS)/build/*.o ./src/Utils/build/*.o core
