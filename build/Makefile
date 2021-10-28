@@ -9,6 +9,7 @@ CPP= $(COMPILERCPP)
 ROOTIMPORTER=../src/VisIVOImporter/Importers
 ROOTFILTER= ../src/VisIVOFilters/Filters
 ROOTVSUTILS= ../src/VisIVOUtils
+ROOTVIEWER= ../src/VisIVOViewer/Viewer
 
 ROOTUTILS=../src/Utils
 VSINC=$(ROOTUTILS)
@@ -26,7 +27,6 @@ OBJFILTER=  $(ROOTUTILS)/build/fparser.o $(ROOTFILTER)/build/vsLine.o $(ROOTFILT
 
 SRCVSUTILS= $(ROOTVSUTILS)/mainUtils.o $(ROOTVSUTILS)/vscreatepath.o $(ROOTVSUTILS)/vsloadhistory.o $(ROOTVSUTILS)/vsutils.o $(ROOTVSUTILS)/vscreategenericslices.o	$(ROOTVSUTILS)/vscreateslices.o	$(ROOTVSUTILS)/vstextcol.o $(ROOTVSUTILS)/vuparametersparser.o $(ROOTUTILS)/vsobject.o $(ROOTUTILS)/visivoutils.o $(ROOTUTILS)/fparser.o  $(ROOTUTILS)/tinystr.o $(ROOTUTILS)/tinyxml.o $(ROOTUTILS)/tinyxmlerror.o $(ROOTUTILS)/tinyxmlparser.o $(ROOTUTILS)/parametersparser.o $(ROOTUTILS)/vstable.o
 OBJVSUTILS= $(ROOTVSUTILS)/build/mainUtils.o $(ROOTVSUTILS)/build/vscreatepath.o $(ROOTVSUTILS)/build/vsloadhistory.o $(ROOTVSUTILS)/build//vsutils.o $(ROOTVSUTILS)/build/vscreategenericslices.o $(ROOTVSUTILS)/build/vscreateslices.o $(ROOTVSUTILS)/build/vstextcol.o $(ROOTVSUTILS)/build/vuparametersparser.o $(ROOTUTILS)/build/vsobject.o $(ROOTUTILS)/build/visivoutils.o $(ROOTUTILS)/build/fparser.o  $(ROOTUTILS)/build/tinystr.o $(ROOTUTILS)/build//tinyxml.o $(ROOTUTILS)/build//tinyxmlerror.o $(ROOTUTILS)/build//tinyxmlparser.o $(ROOTUTILS)/build/parametersparser.o $(ROOTUTILS)/build/vstable.o
-
 
 
 INCLUDE = -I$(ROOTIMPORTER) -I$(ROOTFILTER) -I$(VSINC) -I/opt/local/include/ -I/usr/local/include/ -I$(CFITSIO)/include/ -I$(HDF5)/include/ -I$(CURL)/include
