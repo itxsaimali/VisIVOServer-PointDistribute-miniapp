@@ -64,7 +64,13 @@ POSSIBILITY OF SUCH DAMAGES.
 #define __VolumeSlicer_h
 
 
+/* VTK9 migration
 #include "vtkDataSetToDataSetFilter.h"
+replaced
+#include "vtkDataSetAlgorithm.h"
+
+*/
+#include "vtkDataSetAlgorithm.h"
 #include "vtkImageData.h"
 #include "vtkPolyData.h"
 
@@ -74,10 +80,10 @@ POSSIBILITY OF SUCH DAMAGES.
 class vtkRectilinearGrid;
 class vtkLinearTransform;
 
-class VolumeSlicer : public vtkDataSetToDataSetFilter {
+class VolumeSlicer : public vtkDataSetAlgorithm {//vtkDataSetToDataSetFilter {
 public:
   static VolumeSlicer *New();
-  vtkTypeRevisionMacro(VolumeSlicer, vtkDataSetToDataSetFilter);
+  vtkTypeRevisionMacro(VolumeSlicer, vtkDataSetAlgorithm);//vtkDataSetToDataSetFilter);
 
   /**
   Specify a point defining the origin of the plane.*/

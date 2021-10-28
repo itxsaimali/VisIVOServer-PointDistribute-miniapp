@@ -26,15 +26,17 @@
 #include "visivoutils.h"
 
    class vtkImageData;
-   class vtkVolumeRayCastMapper;
    class vtkVolume;
    class vtkColorTransferFunction;
    class vtkImageMathematics;
    class vtkPiecewiseFunction;
    class vtkImageCast;
    class vtkVolumeProperty;
+  /* VTK9 migration
    class vtkVolumeRayCastCompositeFunction;
-        
+   class vtkVolumeRayCastMapper;
+*/
+  class vtkFixedPointVolumeRayCastMapper;
         
    class VolumePipe: public Pipe
 {
@@ -57,8 +59,11 @@
     vtkImageCast *m_charData;
     vtkPiecewiseFunction *m_opacityTransferFunction;
     vtkVolumeProperty *m_volumeProperty;
+    /* VTK9 migration
     vtkVolumeRayCastCompositeFunction * m_rayCastCompositFunction ;
     vtkVolumeRayCastMapper *m_rayCastMapper ;
+    */
+    vtkFixedPointVolumeRayCastMapper *m_rayCastMapper ;
     vtkVolume *m_volume ;
 };
 #endif

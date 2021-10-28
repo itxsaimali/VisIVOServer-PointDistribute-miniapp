@@ -29,15 +29,16 @@
 
 #include "optionssetter.h"
 #include "vtkGraphicsFactory.h"
-#include "vtkImagingFactory.h"
+//#include "vtkImagingFactory.h"
 
 
 int main(int argc, char*argv[])
 {
   vtkGraphicsFactory::SetOffScreenOnlyMode( 1);
   vtkGraphicsFactory::SetUseMesaClasses( 1 );
-  vtkImagingFactory::SetUseMesaClasses( 1 );
-
+  /*vtk9 migration
+  //vtkImagingFactory::SetUseMesaClasses( 1 );
+*/
   OptionsSetter *pOptSett= new OptionsSetter;
     
   if(argc<2)

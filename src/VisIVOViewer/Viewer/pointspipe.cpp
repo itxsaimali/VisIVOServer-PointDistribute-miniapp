@@ -390,7 +390,13 @@ int PointsPipe::createPipe ()
 
  
   setBoundingBox (m_polyData  );
+      /* VTK9 migration
   m_pConeMapper->SetInput (m_polyData );
+    replaced
+  m_pConeMapper->SetInputData (m_polyData );
+
+    */
+  m_pConeMapper->SetInputData (m_polyData );
   m_pConeActor->SetMapper ( m_pConeMapper );
   
    if(m_visOpt.color=="none")
@@ -535,7 +541,13 @@ void PointsPipe::setGlyphs ( )
   
   if ( m_visOpt.nRows<max )
   {    
+    /* VTK9 migration
     m_glyph->SetInput (m_polyData );
+    replaced
+    m_glyph->SetInputData (m_polyData );
+
+    */
+    m_glyph->SetInputData (m_polyData );
     
     
     if (m_visOpt.scale=="yes")      
@@ -552,7 +564,12 @@ void PointsPipe::setGlyphs ( )
       m_sphere   = vtkSphereSource::New();
       setResolution ( );
       setRadius ();
+      /* VTK9 migration
       m_glyph->SetSource ( m_sphere->GetOutput() );
+      replaced
+            m_glyph->SetSourceData ( m_sphere->GetOutput() );
+*/
+      m_glyph->SetSourceData ( m_sphere->GetOutput() );
       m_sphere->Delete();
     }
     
@@ -561,7 +578,12 @@ void PointsPipe::setGlyphs ( )
       m_cone   = vtkConeSource::New();
       setResolution ( ); 
       setRadius ();
+            /* VTK9 migration
       m_glyph->SetSource ( m_cone->GetOutput() );
+      replaced
+      m_glyph->SetSourceData ( m_cone->GetOutput() );
+*/
+      m_glyph->SetSourceData ( m_cone->GetOutput() );
       m_cone->Delete();
     } 
      
@@ -570,7 +592,12 @@ void PointsPipe::setGlyphs ( )
       m_cylinder   = vtkCylinderSource::New();
       setResolution ( ); 
       setRadius ();
+                  /* VTK9 migration
       m_glyph->SetSource ( m_cylinder->GetOutput() ); 
+      replaced
+      m_glyph->SetSourceData ( m_cylinder->GetOutput() ); 
+*/
+      m_glyph->SetSourceData ( m_cylinder->GetOutput() ); 
       m_cylinder->Delete(); 
     }
     
@@ -578,7 +605,12 @@ void PointsPipe::setGlyphs ( )
     {
       m_cube   = vtkCubeSource::New();
       setRadius (); 
+                        /* VTK9 migration
       m_glyph->SetSource ( m_cube->GetOutput() );  
+      replaced
+      m_glyph->SetSourceData ( m_cube->GetOutput() );  
+*/
+      m_glyph->SetSourceData ( m_cube->GetOutput() );  
       m_cube->Delete();
     }
     

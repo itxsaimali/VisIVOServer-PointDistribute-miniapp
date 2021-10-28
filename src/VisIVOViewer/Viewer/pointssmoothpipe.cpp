@@ -18,8 +18,8 @@
 #include "vtkImageData.h"
 #include "vtkVolume.h"
 #include "vtkVolumeMapper.h"
-#include "vtkVolumeRayCastMapper.h"
-#include "vtkVolumeRayCastCompositeFunction.h"
+//#include "vtkVolumeRayCastMapper.h"
+//#include "vtkVolumeRayCastCompositeFunction.h"
 #include "vtkVolumeProperty.h"
 #include "vtkPiecewiseFunction.h"
 #include "vtkColorTransferFunction.h"
@@ -170,8 +170,10 @@ int PointsSmoothPipe::createPipe ()
    std::string OutputFilenameImage=getDir(m_visOpt.imageName)+getName(m_visOpt.path)+".vti";
 
     m_pMapper=vtkPolyDataMapper::New();
-
+    /* vtk9 migration
     m_pMapper->SetInput(m_pPolyData);
+    */
+    m_pMapper->SetInputData(m_pPolyData);
     m_pActor->SetMapper(m_pMapper);
 
 
@@ -200,18 +202,32 @@ int PointsSmoothPipe::createPipe ()
         if(maxDelta<=dy){maxDelta=dy; indexDelta=ngridY;}
         if(maxDelta<=dz){maxDelta=dz; indexDelta=ngridZ;}
         float splatterRadius=0.015;
+        /* vtk9 migration
         splatter->SetInput(m_pPolyData);
+        */
+        splatter->SetInputData(m_pPolyData);
         splatter->SetSampleDimensions(ngridX,ngridY,ngridZ);
         splatter->SetRadius(splatterRadius);
         splatter->ScalarWarpingOff();
         splatter->SetExponentFactor(-20.0);
         vtkSmartPointer<vtkXMLImageDataWriter> writer = vtkSmartPointer<vtkXMLImageDataWriter>::New();
+        
+        /* VTK9 migration
         writer->SetInput(splatter->GetOutput());
+        */
+        writer->SetInputData(splatter->GetOutput());
         writer->SetFileName(OutputFilenameImage.c_str());
         writer->Write();
+        /*
+        VTK9 migration
         volumeMapper->SetInput(splatter->GetOutput());
+        */
+        volumeMapper->SetInputData(splatter->GetOutput());
         vtkSmartPointer<vtkXMLImageDataWriter> writer2 = vtkSmartPointer<vtkXMLImageDataWriter>::New();
+        /*VTK9 migration
         writer2->SetInput(splatter->GetOutput());
+        */
+        writer2->SetInputData(splatter->GetOutput());
         writer2->SetFileName(OutputFilenameImage.c_str());
         writer2->Write();
     }
@@ -219,7 +235,10 @@ int PointsSmoothPipe::createPipe ()
         vtkSmartPointer<vtkXMLImageDataReader> imageReader =    vtkSmartPointer<vtkXMLImageDataReader>::New();
         imageReader->SetFileName(OutputFilenameImage.c_str());
         imageReader->Update();
+        /*VTK9 migration
         volumeMapper->SetInput(imageReader->GetOutput());
+        */
+        volumeMapper->SetInputData(imageReader->GetOutput());
 //        surface->SetInput(imageReader->GetOutput());
     }
     volumeMapper->SetImageSampleDistance(0.5);

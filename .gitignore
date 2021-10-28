@@ -8,3 +8,5 @@ build/VisIVOFilter
 build/VisIVOUtils
 build/VisIVOImporter
 src/VisIVOViewer/Viewer/build/*
+src/VisIVOUtils/build/
+src/VisIVOViewer/Viewer/build/

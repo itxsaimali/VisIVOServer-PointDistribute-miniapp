@@ -34,8 +34,8 @@
 #include "vtkColorTransferFunction.h"
 #include "vtkActor.h"
 #include "vtkPolyDataMapper.h"
-#include <vtkVolumeRayCastIsosurfaceFunction.h>
-#include <vtkVolumeRayCastMapper.h>
+//#include <vtkVolumeRayCastIsosurfaceFunction.h>
+//#include <vtkVolumeRayCastMapper.h>
 #include <vtkVolumeProperty.h>
 #include <vtkPiecewiseFunction.h>
 #include "vtkImageCast.h"
@@ -122,7 +122,14 @@ int IsosurfacePipe::createPipe ()
   }//else
   volumeField->SetName(m_visOpt.vRenderingField.c_str());
  
+
+/* VTK9 migration 
   m_imageData->SetScalarTypeToFloat();
+  replaced with
+  m_imageData->AllocateScalars(VTK_FLOAT, 3); 
+*/
+  m_imageData->AllocateScalars(VTK_FLOAT, 3);
+
   m_imageData->SetExtent(1,(int)m_visOpt.comp[0],1,(int)m_visOpt.comp[1],1,(int)m_visOpt.comp[2]);
   m_imageData->SetSpacing(m_visOpt.size[0],m_visOpt.size[1],m_visOpt.size[2]);
   m_imageData->GetPointData()->SetScalars(volumeField);
@@ -134,7 +141,12 @@ int IsosurfacePipe::createPipe ()
 //    spw->Write();
 
 vtkImageGaussianSmooth *igs = vtkImageGaussianSmooth::New();
+/* VTK9 migration 
    igs->SetInput(m_imageData);
+  replaced with
+   igs->SetInputData(m_imageData);
+*/
+   igs->SetInputData(m_imageData);
    igs->SetDimensionality(3);
    if(m_visOpt.isoSmooth=="medium")
    {
@@ -158,13 +170,24 @@ m_visOpt.isosurfaceValue=(m_visOpt.isosurfaceValue/255)*(m_range[1]-m_range[0]);
  
 vtkContourFilter *cf = vtkContourFilter::New();
 //   cf->SetInput(m_imageData );
+/* VTK9 migration 
    cf->SetInput((vtkDataSet *) igs->GetOutput() );
+  replaced with
+   cf->SetInputData((vtkDataSet *) igs->GetOutput() );
+*/
+   cf->SetInputData((vtkDataSet *) igs->GetOutput() );
    cf->SetValue(0 , m_visOpt.isosurfaceValue);  // valore della prima (ed unica) isosuperficie
     cf->SetComputeNormals(1);
     cf->SetComputeScalars(1);
 
 vtkPolyDataNormals *pdn = vtkPolyDataNormals::New();
+   //pdn->SetInput((vtkPolyData *) cf->GetOutput());
+   /* VTK9 migration 
    pdn->SetInput((vtkPolyData *) cf->GetOutput());
+  replaced with
+   pdn->SetInputData((vtkPolyData *) cf->GetOutput());
+*/
+   pdn->SetInputData((vtkPolyData *) cf->GetOutput());
     pdn->SetFeatureAngle(90);
     pdn->SetComputeCellNormals(0);
     pdn->SetComputePointNormals(1);
@@ -172,13 +195,21 @@ vtkPolyDataNormals *pdn = vtkPolyDataNormals::New();
     pdn->SetSplitting(0);
 
 vtkPolyDataMapper *pdm = vtkPolyDataMapper::New();
+ /* VTK9 migration 
    pdm->SetInput((vtkPolyData *) pdn->GetOutput());
+  replaced with
+   pdm->SetInputData((vtkPolyData *) pdn->GetOutput());
+*/
+   pdm->SetInputData((vtkPolyData *) pdn->GetOutput());
    pdm->SetNumberOfPieces(1);
    pdm->SetScalarRange(m_range[0] , m_range[1]);  
    pdm->SetColorMode(0);
    pdm->SetResolveCoincidentTopology(0);
    pdm->SetScalarMode(0);
-   pdm->SetImmediateModeRendering(1);
+    /* VTK9 migration 
+    removed
+    pdm->SetImmediateModeRendering(1);
+    */
    pdm->SetScalarVisibility(0);
    pdm->SetUseLookupTableScalarRange(0);
 
