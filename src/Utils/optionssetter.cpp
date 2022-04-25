@@ -51,6 +51,9 @@
 
 #include "historyXmlWriter.h"
 
+#include <math.h>
+
+
 const unsigned int OptionsSetter::MAX_ELEMENT_TO_LOAD = 400000000;
 const float OptionsSetter::INVALID_READ = -100000000.0;
 const double OptionsSetter::INVALID_DREAD = -100000000.0;
