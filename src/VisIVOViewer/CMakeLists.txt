@@ -167,6 +167,8 @@ set(UTILS_SOURCE
 
 add_executable(VisIVOViewer ${VIEWER_SOURCE} ${FILTERS_SOURCE} ${UTILS_SOURCE})
 
+install(TARGETS VisIVOViewer DESTINATION bin)
+
 target_compile_definitions(VisIVOViewer PRIVATE LIGHT)
 
 target_include_directories(VisIVOViewer PRIVATE

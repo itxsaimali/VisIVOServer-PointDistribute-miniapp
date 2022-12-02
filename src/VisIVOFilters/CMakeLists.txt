@@ -115,6 +115,8 @@ set(UTILS_SOURCE
 
 add_executable(VisIVOFilter ${FILTERS_SOURCE} ${UTILS_SOURCE})
 
+install(TARGETS VisIVOFilter DESTINATION bin)
+
 target_include_directories(VisIVOFilter PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/Filters
     ${UTILS_SOURCE_DIR}

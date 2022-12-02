@@ -46,8 +46,9 @@ Prerequisites:
 1. `$ cd boost_1_78_0`
 1. `$ sudo cp -r boost /usr/local/include`
 
-# Building VisIVOServer
+# Building and install VisIVOServer
 1. `$ git clone https://github.com/VisIVOLab/VisIVOServer`
 1. `$ mkdir VisIVOServer/src/build && cd VisIVOServer/src/build`
 1. `$ cmake ..`
 1. `$ make`
+1. `$ sudo make install`
