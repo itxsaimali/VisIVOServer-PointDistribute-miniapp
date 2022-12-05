@@ -58,6 +58,8 @@ set(UTILS_SOURCE
 
 add_executable(VisIVOImporter ${IMPORTER_SOURCE} ${UTILS_SOURCE})
 
+install(TARGETS VisIVOImporter DESTINATION bin)
+
 target_compile_definitions(VisIVOImporter PRIVATE LIGHT)
 
 target_include_directories(VisIVOImporter PRIVATE 

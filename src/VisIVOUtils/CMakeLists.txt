@@ -47,6 +47,8 @@ set(UTILS_SOURCE
 
 add_executable(VisIVOUtils ${VSUTILS_SOURCE} ${UTILS_SOURCE})
 
+install(TARGETS VisIVOUtils DESTINATION bin)
+
 target_include_directories(VisIVOUtils PRIVATE 
     ${UTILS_SOURCE_DIR}
     ${Boost_INCLUDE_DIRS}

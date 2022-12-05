@@ -114,7 +114,7 @@ int GadgetSource::readHeader()
   
   numBlock=0;
    
-  while (!inFile.eof()) //!it is (probably ??) a check control!
+  while (inFile.peek() != EOF) //!it is (probably ??) a check control!
   {
     inFile.seekg (8, std::ios::cur);
     inFile.read((char *)(m_sizeBlock), sizeof(int));
@@ -129,7 +129,7 @@ int GadgetSource::readHeader()
       m_sizeBlock[0]=intSwap((char *)(&m_sizeBlock[0]));
     std::clog<<"m_sizeBlock_END:"<<m_sizeBlock[0]<<std::endl;
 	          
-    if(!inFile.eof())
+    if(inFile.peek() != EOF)
       numBlock++;
   }
    
