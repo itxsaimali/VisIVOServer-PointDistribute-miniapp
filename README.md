@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/421870408.svg)](https://zenodo.org/badge/latestdoi/421870408)
+
 VisIVO Server is a suite of software tools for creating customized views of 3D renderings from astrophysical data tables. Their defining characteristic is that no fixed limits are prescribed regarding the dimensionality of data tables input for processing, thus supporting very large scale datasets.
 
 VisIVO Server consists of three core components: VisIVO Importer, VisIVO Filter and VisIVO Viewer respectively. Their functionality and usage is described in the following sections.
