@@ -208,7 +208,6 @@ target_include_directories(VisIVOApi PRIVATE
 
 target_link_libraries(VisIVOApi PRIVATE
     CFITSIO::CFITSIO
-    HDF5::HDF5
     CURL::libcurl
 )
 
