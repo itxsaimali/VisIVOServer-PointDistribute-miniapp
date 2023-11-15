@@ -65,14 +65,13 @@ PointsSmoothPipe::~PointsSmoothPipe()
 void PointsSmoothPipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   if ( m_pMapper != 0 )
     m_pMapper->Delete();
   if ( m_pActor != 0 )
     m_pActor->Delete();
   if ( m_pPolyData!=0)
     m_pPolyData->Delete() ;
-
-
 }
 //-----------------------------------------------------------------------------------
 int PointsSmoothPipe::createPipe ()

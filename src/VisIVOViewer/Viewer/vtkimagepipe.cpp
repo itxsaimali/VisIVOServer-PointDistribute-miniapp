@@ -77,10 +77,9 @@ VtkImagePipe::~VtkImagePipe()
 void VtkImagePipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   if ( m_polyData!=0)
     m_polyData->Delete() ;
-
-
 }
 
 //-----------------------------------------------------------------------------------

@@ -65,15 +65,14 @@ IsosurfacePipe::~IsosurfacePipe()
 //---------------------------------
 {
   destroyVTK();
-
   m_imageData->Delete();
 }
 //---------------------------------
 void IsosurfacePipe::destroyAll()
 //---------------------------------
 {  
+  destroyVTK();
   m_imageData->Delete();
-
 }
 //-----------------------------------------------------------------------------------
 int IsosurfacePipe::createPipe ()

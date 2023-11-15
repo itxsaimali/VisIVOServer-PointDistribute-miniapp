@@ -71,26 +71,24 @@ VectorPipe::~VectorPipe()
 //---------------------------------
 {
   destroyVTK();
-
   if ( m_Glyph3D!=0)
     m_Glyph3D->Delete() ;
   if ( m_PolyDataMapper!=0)
     m_PolyDataMapper->Delete() ;
   if ( m_actor!=0)
     m_actor->Delete() ;
-
 }
 //---------------------------------
 void VectorPipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   if ( m_Glyph3D!=0)
     m_Glyph3D->Delete() ;
   if ( m_PolyDataMapper!=0)
     m_PolyDataMapper->Delete() ;
   if ( m_actor!=0)
     m_actor->Delete() ;
-
 }
 
 //-----------------------------------------------------------------------------------

@@ -80,13 +80,12 @@ PointsPipe::~PointsPipe()
     m_pConeActor->Delete();
   if ( m_polyData!=0)
     m_polyData->Delete() ;
-
-
 }
 //---------------------------------
 void PointsPipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   if ( m_glyph!=0)
     m_glyph->Delete() ;
   if ( m_glyphFilter!=0)
@@ -97,8 +96,6 @@ void PointsPipe::destroyAll()
     m_pConeActor->Delete();
   if ( m_polyData!=0)
     m_polyData->Delete() ;
-
-
 }
 
 //-----------------------------------------------------------------------------------

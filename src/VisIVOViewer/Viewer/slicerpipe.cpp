@@ -67,9 +67,8 @@ SlicerPipe::~SlicerPipe()
 void SlicerPipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   m_colorTransferFunction->Delete();
-
-
 }
 //------------------------------------------
 int SlicerPipe::createPipe()

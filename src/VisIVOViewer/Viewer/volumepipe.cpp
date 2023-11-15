@@ -92,6 +92,7 @@ VolumePipe::~VolumePipe()
 void VolumePipe::destroyAll()
 //---------------------------------
 {
+  destroyVTK();
   m_colorTransferFunction->Delete();
   m_imageData->Delete();
   m_math->Delete();
@@ -104,8 +105,6 @@ void VolumePipe::destroyAll()
   */
   m_rayCastMapper->Delete();
   m_volume->Delete();
-
-
 }
 //------------------------------------------
 int VolumePipe::createPipe()
