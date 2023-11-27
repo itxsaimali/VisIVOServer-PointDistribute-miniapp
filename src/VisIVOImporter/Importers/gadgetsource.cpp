@@ -85,6 +85,7 @@ int GadgetSource::readHeader()
   if (iCompare (checkType[0].c_str(), "HEAD") == 0)  //!read header Type2 else Type1
   {
     headerType2 curHead;
+    //std::clog<<"Header1"<<std::endl;
     inFile.seekg(4, std::ios::beg);
     
     inFile.read((char *)(&curHead), 304);   //!*** COPY DATA in STRUCT m_pHeaderType2 ***//
@@ -147,6 +148,7 @@ int GadgetSource::readHeader()
 
 int GadgetSource::readMultipleHeaders(int nFiles, std::string fileName, bool needSwap)
 {
+  long long int sum = 0; 
   for(int i = 0; i < nFiles; i++){ 
     std::ifstream inFile; 
     headerType2 curHead;
@@ -158,7 +160,7 @@ int GadgetSource::readMultipleHeaders(int nFiles, std::string fileName, bool nee
     if (needSwap)
       swapHeaderType2();
     m_pHeaderType2.push_back(curHead);
-
+    sum += curHead.npart[1];
     inFile.close();
   }
   return 1;
@@ -267,7 +269,15 @@ int GadgetSource::readData()
   blockNamesToCompare.push_back("BHMD");//39
   blockNamesToCompare.push_back("BHPC");//40
   blockNamesToCompare.push_back("ACRB");//41
-  
+
+  unsigned long long npartTotal64[6];
+
+  for(int type = 0; type < 6; type++){
+    unsigned long long tmp = (unsigned long long)m_pHeaderType2[0].NallWH[type] << 32;
+    npartTotal64[type] = tmp;
+    npartTotal64[type] += m_pHeaderType2[0].npartTotal[type];
+  }
+
   std::vector<std::vector<bool>> blocksFields = 
   { 
     {1,1,1,1,1,1}, // 0: POS, VEL, ID, MASS, IDU, TSTP, POT, ACCE
@@ -340,13 +350,11 @@ int GadgetSource::readData()
   MPI_Offset mpiFileSize, mpiOffset;
   MPI_File_get_size(mpi_inFile, &mpiFileSize);
   MPI_File_seek(mpi_inFile, 280, MPI_SEEK_SET);
-
   do{ 
     MPI_File_seek(mpi_inFile, 4, MPI_SEEK_CUR);
     MPI_File_read(mpi_inFile, (char *)(tagTmp), 4, MPI_CHAR, &status);
     
     tag = strtok(tagTmp, " ");
-
     if(std::find(blockNamesToCompare.begin(), blockNamesToCompare.end(), tag) != blockNamesToCompare.end() && iCompare(tag, "Zs") != 0){
       listOfBlocks.push_back(tag);
     }
@@ -421,14 +429,21 @@ int GadgetSource::readData()
     else inFile[i] = open(fileName.c_str(), std::ios::binary);
   }
 
+  //std::clog << "Number of Process " << num_proc << std::endl;
+
   unsigned int param=1; unsigned int esp=32;
   unsigned long long int maxULI;
   #pragma omp parallel for collapse(2)
-  for(int nBlock = proc_id; nBlock < totBlocks; nBlock+=num_proc){
-    for(int nFile = 0; nFile < numFiles; nFile++){
+  for(int nBlock = 0; nBlock < totBlocks; nBlock++){
+      for(int nFile = proc_id; nFile < numFiles; nFile+=num_proc){
       std::string tag;   
       char tagTmp[5]="";
+      //int nBlock = block % totBlocks;
+      //int nFile = block / totBlocks;
       long long unsigned int offset = 0;
+      //#pragma omp critical
+      //{std::clog << "thread "<< omp_get_thread_num() << " of proc " << proc_id << std::endl;}
+
       int sizeBlock[1];
       sizeBlock[0] = 0;
       unsigned long int chunk=0; unsigned long int n=0; unsigned long int Resto=0;
@@ -437,18 +452,23 @@ int GadgetSource::readData()
         offset += 4;
         pread(inFile[nFile], (char *)(tagTmp), 4*sizeof(char), offset);
         offset += 4;
+        //inFile[nFile].read((char *)(tagTmp), 4*sizeof(char));
         tag = strtok(tagTmp, " ");
+        //std::clog << "Tag " << tag << std::endl;
         if(iCompare(tag, listOfBlocks[nBlock]) == 0) break;
         pread(inFile[nFile], (char *)(sizeBlock), sizeof(int), offset);
         offset += (4 + sizeBlock[0] + 4);
         if (needSwap)
           m_sizeBlock[0]=intSwap((char *)(&m_sizeBlock[0])); 
+        //std::clog << "Sizeblock " << sizeBlock[0] << std::endl;  
       }
+        
+      //inFile[nFile].seekg(12, std::ios::cur);
       offset += 12;
       off64_t pWrite=0; long long unsigned int pToStart=0;
       off64_t pWriteX=0,  pWriteY=0, pWriteZ=0;
       //start processing block
-      unsigned long long int minPart[6];
+        unsigned long long int minPart[6];
             
       maxULI=ldexp((float)param, esp); 
       minPart[0]=maxULI;
@@ -461,15 +481,22 @@ int GadgetSource::readData()
         if (m_pHeaderType2[nFile].npart[type] != 0 && m_pHeaderType2[nFile].npart[type] <= 2500000)
           minPart[type] = m_pHeaderType2[nFile].npart[type];
         else
-          minPart[type] = 2500000;
+          minPart[type] = 25000000;
       }
       
       for(int type = 0; type < 6; type++)
       {             
+
+      //#pragma omp critical
+        //std::clog << "thread "<< omp_get_thread_num() << " start reading block " << nBlock << " of file " << nFile << "on core " << sched_getcpu() << std::endl;
+        //printf("%d thread %d start reading block %d of file nFile, on cpu %d\n", omp_get_thread_num(), nBlock,
+        //                nFile, sched_getcpu());
+        
         if(m_pHeaderType2[nFile].npart[type] != 0 && blocksFields[mapBlockNamesToFields[listOfBlocks[nBlock]]][type] && 
           (iCompare(listOfBlocks[nBlock], "MASS") != 0 || m_pHeaderType2[nFile].mass[type] == 0))
-        {    
-          pToStart = typePosition[nBlock][type]*(unsigned long long)m_pHeaderType2[nFile].npartTotal[type] + fileStartPosition[type][nFile];
+        {  
+          
+          pToStart = typePosition[nBlock][type]*npartTotal64[type] + fileStartPosition[type][nFile];
           chunk = minPart[type];
           n=m_pHeaderType2[nFile].npart[type]/chunk;
           
@@ -479,7 +506,8 @@ int GadgetSource::readData()
           bufferBlock = new float[mapBlockSize[listOfBlocks[nBlock]]*chunk];
 
           if(mapBlockSize[listOfBlocks[nBlock]] == 3)
-          {           
+          {
+            
             float *buffer_X=NULL;
             buffer_X = new float[chunk];
             float *buffer_Y=NULL;
@@ -489,6 +517,7 @@ int GadgetSource::readData()
                 
             for (int k = 0; k < n; k++)
             {    
+              
               pread(inFile[nFile], (char *)(bufferBlock), 3*chunk*sizeof(float), offset);
               offset += 3*chunk*sizeof(float);
               if(needSwap)
@@ -508,15 +537,25 @@ int GadgetSource::readData()
               
               pWriteX=(((unsigned long long)pToStart*sizeof(float)) + (k*chunk*sizeof(float)));
               pwrite(outFileBin[type], (char *)(buffer_X), chunk*sizeof(float), pWriteX);
-              pWriteY=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + ((unsigned long long)m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+              pWriteY=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + npartTotal64[type]*sizeof(float));
+              //outFileBin[type].seekp(pWriteY);
+              //outFileBin[type].write((char *)(buffer_Y), chunk*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_Y), chunk*sizeof(float), pWriteY);
-              pWriteZ=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + (2*(unsigned long long)m_pHeaderType2[0].npartTotal[type]*sizeof(float)));  
+              //#pragma omp critical
+              //if(type==0) std::clog << "thread " << omp_get_thread_num() << " pwriteY " << pWriteY << " pToStart " << pToStart << " k " << k << " chunk " << chunk << std::endl;
+
+              pWriteZ=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + (2*npartTotal64[type]*sizeof(float)));  
+              
+              //outFileBin[type].seekp(pWriteZ);
+              //outFileBin[type].write((char *)(buffer_Z), chunk*sizeof(float));  
               pwrite(outFileBin[type], (char *)(buffer_Z), chunk*sizeof(float), pWriteZ);
+              
             }
             /*=================================================================*/
             /*============ Buffer Block and Write out FILE [Resto] ============*/
     
             if(Resto>0){
+              //inFile[nFile].read((char *) bufferBlock, 3*Resto*sizeof(float));
               pread(inFile[nFile], (char *) bufferBlock, 3*Resto*sizeof(float), offset);
               offset += 3*Resto*sizeof(float);
               if(needSwap)
@@ -535,10 +574,20 @@ int GadgetSource::readData()
                 }
 
               pWriteX=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)));
+              //outFileBin[type].seekp(pWriteX);
+              //outFileBin[type].write((char *)(buffer_X), Resto*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_X), Resto*sizeof(float), pWriteX);
-              pWriteY=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+
+              pWriteY=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + npartTotal64[type]*sizeof(float));
+              //outFileBin[type].seekp(pWriteY);
+              //outFileBin[type].write((char *)(buffer_Y), Resto*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_Y), Resto*sizeof(float), pWriteY);
-              pWriteZ=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (2*m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+
+              pWriteZ=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (2*npartTotal64[type]*sizeof(float)));
+              
+              //if(type==0) std::clog << "thread " << omp_get_thread_num() << " npartTotal " << m_pHeaderType2[0].npartTotal[type] << " pWriteX " << pWriteX << " pwriteY " << pWriteY << " pToStart " << pToStart << " n " << n << " chunk " << chunk << std::endl;
+              //outFileBin[type].seekp(pWriteZ);
+              //outFileBin[type].write((char *)(buffer_Z), Resto*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_Z), Resto*sizeof(float), pWriteZ);
             }
                     /*=================================================================*/  
@@ -552,20 +601,26 @@ int GadgetSource::readData()
           {
             for (int k = 0; k < n; k++)
             {
+              //inFile[nFile].read((char *)(bufferBlock), chunk*sizeof(float));
               pread(inFile[nFile], (char *)(bufferBlock), chunk*sizeof(float), offset);
               offset += chunk*sizeof(float);
               if(needSwap)
                 for (j=0; j<chunk; j++)
                   bufferBlock[j]=floatSwap((char *)(&bufferBlock[j]));
               
-              pWrite=((pToStart*sizeof(float)) + (k*chunk*sizeof(float))); 
+              pWrite=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)));
+
+              //outFileBin[type].seekp(pWrite);
+              //outFileBin[type].write((char *)(bufferBlock), chunk*sizeof(float));   
               pwrite(outFileBin[type], (char *)(bufferBlock), chunk*sizeof(float), pWrite);         
             }
 
             /*=================================================================*/
             /*============ Buffer Block and Write out FILE [Resto] ============*/
 
-            if(Resto > 0){  
+            //MPI_File_read(inFile[nFile], bufferBlock, Resto, MPI_FLOAT, &status);
+            if(Resto > 0){
+              
               pread(inFile[nFile], (char *) bufferBlock, Resto*sizeof(float), offset);
               offset += Resto*sizeof(float);
               if( needSwap)
@@ -573,13 +628,21 @@ int GadgetSource::readData()
                   bufferBlock[j]=floatSwap((char *)(&bufferBlock[j]));
             
               pWrite=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)));
+
+              //outFileBin[type].seekp(pWrite);
+              //outFileBin[type].write((char *) bufferBlock, Resto*sizeof(float));
               pwrite(outFileBin[type], (char *)(bufferBlock), Resto*sizeof(float), pWrite);
             }
             delete [] bufferBlock;
           }/*d*/
+
         }
+        
         pWriteX = 0; pWriteY = 0; pWriteZ = 0; 
       } 
+      //#pragma omp critical
+      //{std::clog << "thread "<< omp_get_thread_num() << " finish reading block " << nBlock << "of file " << nFile << std::endl;}
+
     }
   }
 
@@ -617,18 +680,18 @@ int GadgetSource::readData()
 
   for (type=0; type<6; type++)
   {
-    if(m_pHeaderType2[0].npartTotal[type] != 0)
+    if(npartTotal64[type] != 0)
     {
       for(int KK = 0; KK < namesFields[type].size(); KK++)
       {
         m_fieldsNames.push_back(namesFields[type][KK]);
       }
       pathHeader = pathFileOut + tagTypeForNameFile[type] + bin;
-      makeHeader((unsigned long long int)m_pHeaderType2[0].npartTotal[type], pathHeader, m_fieldsNames,m_cellSize,m_cellComp,m_volumeOrTable);
+      makeHeader(npartTotal64[type], pathHeader, m_fieldsNames,m_cellSize,m_cellComp,m_volumeOrTable);
       m_fieldsNames.clear();
       pathHeader="";
     }
-  }  
+  }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
@@ -719,6 +782,7 @@ void GadgetSource::swapHeaderType2()
    
   char fill[256- 6*sizeof(int)- 6*sizeof(double)- 2*sizeof(double)- 2*sizeof(int)- 6*sizeof(int)- 2*sizeof(int)- 
       4*sizeof(double)- 9*sizeof(int)]; /* fills to 256 Bytes */
+  //m_pHeaderType1.final_boh[0] = intSwap((char*)(&m_pHeaderType1.final_boh[0]));
   m_pHeaderType1.sizeFirstBlock[0] = intSwap((char*)(&m_pHeaderType1.sizeFirstBlock[0]));
    
 }

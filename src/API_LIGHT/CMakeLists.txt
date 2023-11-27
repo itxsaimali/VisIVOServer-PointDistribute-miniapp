@@ -14,6 +14,8 @@ find_package(Boost REQUIRED)
 find_package(CFITSIO REQUIRED)
 find_package(HDF5 REQUIRED)
 find_package(CURL REQUIRED)
+find_package(MPI REQUIRED)
+find_package(OpenMP REQUIRED)
 
 set(API_HEADERS
     visivo.h
@@ -209,7 +211,15 @@ target_include_directories(VisIVOApi PRIVATE
 target_link_libraries(VisIVOApi PRIVATE
     CFITSIO::CFITSIO
     CURL::libcurl
+    ${MPI_C_LIBRARIES}
+    OpenMP::OpenMP_CXX
+    ${VTK_LIBRARIES}
+    ${HDF5_LIBRARIES}
 )
 
 install(TARGETS VisIVOApi DESTINATION lib)
 install(FILES ${API_HEADERS} DESTINATION include)
+
+set(CXXFLAGS  -fopenmp)
+set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
+target_link_libraries(VisIVOApi PUBLIC MPI::MPI_CXX)
