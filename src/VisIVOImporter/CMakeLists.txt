@@ -180,6 +180,7 @@ target_link_libraries(VisIVOImporter PRIVATE
     ${MPI_C_LIBRARIES}
     OpenMP::OpenMP_CXX
     ${VTK_LIBRARIES}
+    stdc++fs
 )
 
 install(TARGETS VisIVOImporter DESTINATION bin)
