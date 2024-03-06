@@ -75,7 +75,7 @@ void AbstractSource::setPointsFileName(const char* fileName, const char* binaryN
 				       const char* login, const char* binaryHeader, 
 				       float missing, float text, 
 				       std::string datasetdList,
-				       std::vector<std::string> hyperslab, int fitshdunum)
+				       std::vector<std::string> hyperslab, int fitshdunum, std::vector<std::string> fields)
 //---------------------------------------------------------------------
 {
   m_pointsFileName = fileName;
@@ -95,6 +95,7 @@ void AbstractSource::setPointsFileName(const char* fileName, const char* binaryN
   
   m_datasetList=datasetdList;
   m_hyperslab=hyperslab;
+  m_fields=fields;
   
   m_nRows=points;
   m_type=type;

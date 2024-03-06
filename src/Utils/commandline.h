@@ -45,6 +45,7 @@ class CommandLine
 double m_size[3],m_comput[3]; //!volume data
 unsigned long long int m_npoints;
     std::vector<std::string> m_hyperslab;
+    std::vector<std::string> m_fields;
     bool m_gLiteOut;
     std::string m_lfn, m_VO, m_outlfn, m_se, m_outPath,m_historyFile;
     int m_fitshdunum;

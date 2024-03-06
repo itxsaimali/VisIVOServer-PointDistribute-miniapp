@@ -326,8 +326,10 @@ int GadgetSource::readData()
     fStream.seekg(4, std::ios::cur);
     fStream.read((char *)(tagTmp), 4*sizeof(char));   
     tag = strtok(tagTmp, " ");
-    if(std::find(blockNamesToCompare.begin(), blockNamesToCompare.end(), tag) != blockNamesToCompare.end() && iCompare(tag, "Zs") != 0)
-      listOfBlocks.push_back(tag);
+    if(std::find(blockNamesToCompare.begin(), blockNamesToCompare.end(), tag) != blockNamesToCompare.end() && iCompare(tag, "Zs") != 0){
+      if(m_fields.size() == 0 || std::find(m_fields.begin(), m_fields.end(), tag) != m_fields.end())
+        listOfBlocks.push_back(tag);
+    }
     fStream.read((char *)(m_sizeBlock), sizeof(int));  
     if (needSwap)
       m_sizeBlock[0]=intSwap((char *)(&m_sizeBlock[0]));
@@ -434,7 +436,7 @@ int GadgetSource::readData()
       minPart[3]=maxULI;
       minPart[4]=maxULI;
       minPart[5]=maxULI;
-      for(type=0; type < 6; type++){
+      for(int type=0; type < 6; type++){
         if (m_pHeaderType2[nFile].npart[type] != 0 && m_pHeaderType2[nFile].npart[type] <= 2500000)
           minPart[type] = m_pHeaderType2[nFile].npart[type];
         else
