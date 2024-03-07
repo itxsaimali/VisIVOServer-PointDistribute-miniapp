@@ -221,6 +221,7 @@ sstmp1<<"_"<<rand()<<buffer;
 randat=sstmp1.str();
 
 bool periodic=false;
+
 if(m_tables[0]->getIsVolume())
 {
 	std::cerr<<"VSPointPropertyOp: cannot be applied to  volume."<<std::endl;
@@ -280,9 +281,11 @@ if(stmp=="" || stmp=="unknown")
 }
 op.addParameter("out",tempFilename);
 op.addInput(&table);
+
 op.execute();
 float *ftmp;
 ftmp=new float[3];
+
 if(!op.getOrigin(ftmp))
 {	
 	std::cerr<<"VSPointPropertyOp: Invalid Origin is given"<<std::endl;
@@ -307,6 +310,7 @@ for(int i=0;i<3;i++) m_spacing[i]=ftmp[i];
 /*** END PointDistribute OP **/
 
 bool append=true; 
+
 if(!isParameterPresent("append")) append=false;
 std::string fileNameOutput;
 if(!append)
@@ -434,9 +438,9 @@ gridIndex[1]=m_numNewPts-1;
 tableGrid.getColumn(gridColList,1,0,m_numNewPts-1,m_grid);
 
 std::stringstream ssresolution;
-int sampleDimensions[3];
+unsigned long long int sampleDimensions[3];
 ssresolution.str(getParameterAsString("resolution"));
-int counterRes=0;
+unsigned long long int counterRes=0;
 
 while (!ssresolution.eof())
 {
@@ -454,8 +458,8 @@ while (!ssresolution.eof())
 	if(counterRes==3)
 		break;
 }
-int jkFactor = sampleDimensions[0]*sampleDimensions[1];
-int jFactor = sampleDimensions[0];
+unsigned long long int jkFactor = sampleDimensions[0]*sampleDimensions[1];
+unsigned long long int jFactor = sampleDimensions[0];
 
 totEle=totRows;
 while(totEle!=0)
@@ -464,7 +468,7 @@ while(totEle!=0)
 	toRow=fromRow+maxEle-1;
 	if(toRow>totRows-1)toRow=totRows-1;
 	m_tables[0]->getColumn(colList, m_nOfCol, fromRow, toRow, m_fArray);
- 	int nCell=sampleDimensions[0]*sampleDimensions[1]*sampleDimensions[2];
+ 	unsigned long long int nCell=sampleDimensions[0]*sampleDimensions[1]*sampleDimensions[2];
 
 	for (int ptId=0; ptId < toRow-fromRow+1; ptId++)
     	{

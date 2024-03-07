@@ -147,6 +147,7 @@ int GadgetSource::readHeader()
 
 int GadgetSource::readMultipleHeaders(int nFiles, std::string fileName, bool needSwap)
 {
+  long long int sum = 0; 
   for(int i = 0; i < nFiles; i++){ 
     std::ifstream inFile; 
     headerType2 curHead;
@@ -158,7 +159,7 @@ int GadgetSource::readMultipleHeaders(int nFiles, std::string fileName, bool nee
     if (needSwap)
       swapHeaderType2();
     m_pHeaderType2.push_back(curHead);
-
+    sum += curHead.npart[1];
     inFile.close();
   }
   return 1;
@@ -267,6 +268,14 @@ int GadgetSource::readData()
   blockNamesToCompare.push_back("BHMD");//39
   blockNamesToCompare.push_back("BHPC");//40
   blockNamesToCompare.push_back("ACRB");//41
+
+  unsigned long long npartTotal64[6];
+
+  for(int type = 0; type < 6; type++){
+    unsigned long long tmp = (unsigned long long)m_pHeaderType2[0].NallWH[type] << 32;
+    npartTotal64[type] = tmp;
+    npartTotal64[type] += m_pHeaderType2[0].npartTotal[type];
+  }
   
   std::vector<std::vector<bool>> blocksFields = 
   { 
@@ -403,14 +412,14 @@ int GadgetSource::readData()
   unsigned int param=1; unsigned int esp=32;
   unsigned long long int maxULI;
   #pragma omp parallel for collapse(2)
-  for(int nBlock = proc_id; nBlock < totBlocks; nBlock+=num_proc){
-    for(int nFile = 0; nFile < numFiles; nFile++){
+  for(int nBlock = 0; nBlock < totBlocks; nBlock++){
+    for(int nFile = proc_id; nFile < numFiles; nFile+=num_proc){
       std::string tag;   
       char tagTmp[5]="";
       long long unsigned int offset = 0;
       int sizeBlock[1];
       sizeBlock[0] = 0;
-      unsigned long int chunk=0; unsigned long int n=0; unsigned long int Resto=0;
+      unsigned long long int chunk=0; unsigned long long int n=0; unsigned long long int Resto=0;
       int c=0;
       while(iCompare(tag, listOfBlocks[nBlock]) != 0){
         offset += 4;
@@ -448,7 +457,7 @@ int GadgetSource::readData()
         if(m_pHeaderType2[nFile].npart[type] != 0 && blocksFields[mapBlockNamesToFields[listOfBlocks[nBlock]]][type] && 
           (iCompare(listOfBlocks[nBlock], "MASS") != 0 || m_pHeaderType2[nFile].mass[type] == 0))
         {    
-          pToStart = typePosition[nBlock][type]*(unsigned long long)m_pHeaderType2[nFile].npartTotal[type] + fileStartPosition[type][nFile];
+          pToStart = typePosition[nBlock][type]*npartTotal64[type] + fileStartPosition[type][nFile];
           chunk = minPart[type];
           n=m_pHeaderType2[nFile].npart[type]/chunk;
           
@@ -487,9 +496,9 @@ int GadgetSource::readData()
               
               pWriteX=(((unsigned long long)pToStart*sizeof(float)) + (k*chunk*sizeof(float)));
               pwrite(outFileBin[type], (char *)(buffer_X), chunk*sizeof(float), pWriteX);
-              pWriteY=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + ((unsigned long long)m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+              pWriteY=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + npartTotal64[type]*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_Y), chunk*sizeof(float), pWriteY);
-              pWriteZ=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + (2*(unsigned long long)m_pHeaderType2[0].npartTotal[type]*sizeof(float)));  
+              pWriteZ=((pToStart*sizeof(float)) + (k*chunk*sizeof(float)) + (2*npartTotal64[type]*sizeof(float)));  
               pwrite(outFileBin[type], (char *)(buffer_Z), chunk*sizeof(float), pWriteZ);
             }
             /*=================================================================*/
@@ -515,9 +524,9 @@ int GadgetSource::readData()
 
               pWriteX=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)));
               pwrite(outFileBin[type], (char *)(buffer_X), Resto*sizeof(float), pWriteX);
-              pWriteY=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+              pWriteY=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + npartTotal64[type]*sizeof(float));
               pwrite(outFileBin[type], (char *)(buffer_Y), Resto*sizeof(float), pWriteY);
-              pWriteZ=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (2*m_pHeaderType2[0].npartTotal[type]*sizeof(float)));
+              pWriteZ=((pToStart*sizeof(float)) + (n*chunk*sizeof(float)) + (2*npartTotal64[type]*sizeof(float)));
               pwrite(outFileBin[type], (char *)(buffer_Z), Resto*sizeof(float), pWriteZ);
             }
                     /*=================================================================*/  
@@ -596,14 +605,14 @@ int GadgetSource::readData()
 
   for (type=0; type<6; type++)
   {
-    if(m_pHeaderType2[0].npartTotal[type] != 0)
+    if(npartTotal64[type] != 0)
     {
       for(int KK = 0; KK < namesFields[type].size(); KK++)
       {
         m_fieldsNames.push_back(namesFields[type][KK]);
       }
       pathHeader = pathFileOut + tagTypeForNameFile[type] + bin;
-      makeHeader((unsigned long long int)m_pHeaderType2[0].npartTotal[type], pathHeader, m_fieldsNames,m_cellSize,m_cellComp,m_volumeOrTable);
+      makeHeader(npartTotal64[type], pathHeader, m_fieldsNames,m_cellSize,m_cellComp,m_volumeOrTable);
       m_fieldsNames.clear();
       pathHeader="";
     }

@@ -416,7 +416,7 @@ catch(std::bad_alloc &e)
 	  unsigned long long int fromRow, toRow, startCounter=0;
 	  unsigned int colList[1];	
 	  colList[0]=*iter;
-	  unsigned int nOfValidElement=0;
+	  unsigned long long int nOfValidElement=0;
 	  counterCols++;
 	  m_sumValue[counterCols]=0.;
 	  m_averageValue[counterCols]=0.;
