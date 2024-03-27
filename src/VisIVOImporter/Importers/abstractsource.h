@@ -40,7 +40,7 @@ class AbstractSource
 			   const char* type, long unsigned int points, 
 			   const char* login, const char* binaryHeader, 
 			   float missing, float text, std::string datasetdList,
-			   std::vector<std::string> hyperslab, int fitshdunum);
+			   std::vector<std::string> hyperslab, int fitshdunum, std::vector<std::string> fields);
 
     void setPointsFileName(const char *fileName,const char *binaryName);
 //     void releaseResources();
@@ -73,6 +73,7 @@ class AbstractSource
     double m_cellSize[3], m_cellComp[3];
     int maxInt(){return MAX_INT;};
     std::vector<std::string>  m_hyperslab;
+    std::vector<std::string>  m_fields;
     int m_fitshdunum;
 
 };

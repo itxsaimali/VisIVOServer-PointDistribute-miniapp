@@ -388,7 +388,7 @@ bool VSPointDistributeOp::execute()
     VSTable tableGrid;
     std::vector<int> fieldList;
     // check for points  coordinate columns
-    int counterCols=0;
+    unsigned long long int counterCols=0;
     std::stringstream ssListparameters;
     ssListparameters.str(getParameterAsString("points"));
     while (!ssListparameters.eof())
@@ -689,8 +689,8 @@ bool VSPointDistributeOp::execute()
         for(int i=0;i<nOfField;i++)
             colList[3+i]=fieldList[i];
     
-    int jkFactor = m_sampleDimensions[0]*m_sampleDimensions[1];
-    int jFactor = m_sampleDimensions[0];
+    unsigned long long int jkFactor = m_sampleDimensions[0]*m_sampleDimensions[1];
+    unsigned long long int jFactor = m_sampleDimensions[0];
     float norm;
     
     
@@ -786,11 +786,10 @@ bool VSPointDistributeOp::execute()
             } //for(... ptId..)
         } // close if ngp
         
-        
         if(m_cic)
         {
             float wc=0.;
-            int nCell=m_sampleDimensions[0]*m_sampleDimensions[1]*m_sampleDimensions[2];
+            unsigned long long int nCell=m_sampleDimensions[0]*m_sampleDimensions[1]*m_sampleDimensions[2];
             // CIC on points
             for (int ptId=0; ptId < toRow-fromRow+1; ptId++)
             {
@@ -911,6 +910,7 @@ bool VSPointDistributeOp::execute()
                 
             } //for(... ptId..)
         } // close if cic
+
         if(m_tsc) //TSC
         {
             float wc=0;
@@ -1072,5 +1072,3 @@ bool VSPointDistributeOp::execute()
     if(gridList!=NULL)delete [] gridList;
     return true;
 }
-
-

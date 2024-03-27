@@ -430,15 +430,16 @@ void Pipe::setBoundingBox ( vtkDataObject *data )
 		replaced
 	outlineMapper->SetInputData ( corner->GetOutput() );
 		*/
-	outlineMapper->SetInputData ( corner->GetOutput() );
+	outlineMapper->SetInputConnection(0, corner->GetOutputPort(0));
 
 	vtkProperty *outlineProperty = vtkProperty::New();
-	outlineProperty->SetColor ( 1,1,1 ); // Set the color to white
+	outlineProperty->SetColor ( 1.0,1.0,1.0 ); // Set the color to white
 	outlineProperty->SetAmbient ( 1 );
 	if(m_visOpt.showBox)
 		outlineProperty->SetOpacity ( 0.999 );
 	else
         outlineProperty->SetOpacity ( 0.0 );
+
 	outlineProperty->SetRepresentationToWireframe();
 	outlineProperty->SetInterpolationToFlat();
 

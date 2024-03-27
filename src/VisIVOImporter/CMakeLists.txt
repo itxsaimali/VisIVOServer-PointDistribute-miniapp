@@ -8,6 +8,113 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(CFITSIO REQUIRED)
 find_package(HDF5 REQUIRED)
 find_package(CURL REQUIRED)
+find_package(MPI REQUIRED)
+find_package(OpenMP REQUIRED)
+
+find_package(VTK 9.1.0 REQUIRED COMPONENTS
+    ChartsCore
+    CommonColor
+    CommonComputationalGeometry
+    CommonCore
+    CommonDataModel
+    CommonExecutionModel
+    CommonMath
+    CommonMisc
+    CommonSystem
+    CommonTransforms
+    DICOMParser
+    DomainsChemistry
+    doubleconversion
+    exodusII
+    expat
+    FiltersAMR
+    FiltersCore
+    FiltersExtraction
+    FiltersFlowPaths
+    FiltersGeneral
+    FiltersGeneric
+    FiltersGeometry
+    FiltersHybrid
+    FiltersHyperTree
+    FiltersImaging
+    FiltersModeling
+    FiltersParallel
+    FiltersParallelImaging
+    FiltersProgrammable
+    FiltersSelection
+    FiltersSMP
+    FiltersSources
+    FiltersStatistics
+    FiltersTexture
+    FiltersVerdict
+    freetype
+    GeovisCore
+    gl2ps
+    glew
+    ImagingColor
+    ImagingCore
+    ImagingFourier
+    ImagingGeneral
+    ImagingHybrid
+    ImagingMath
+    ImagingMorphological
+    ImagingSources
+    ImagingStatistics
+    ImagingStencil
+    InfovisCore
+    InfovisLayout
+    InteractionImage
+    InteractionStyle
+    InteractionWidgets
+    IOAMR
+    IOCore
+    IOEnSight
+    IOExodus
+    IOExport
+    IOGeometry
+    IOImage
+    IOImport
+    IOInfovis
+    IOLegacy
+    IOLSDyna
+    IOMINC
+    IOMovie
+    IOParallel
+    IOParallelXML
+    IOPLY
+    IOSQL
+    IOVideo
+    IOXML
+    IOXMLParser
+    jsoncpp
+    loguru
+    lz4
+    lzma
+    metaio
+    ogg
+    ParallelCore
+    ParallelDIY
+    RenderingAnnotation
+    RenderingContext2D
+    RenderingCore
+    RenderingFreeType
+    RenderingFreeType
+    RenderingGL2PSOpenGL2
+    RenderingImage
+    RenderingLabel
+    RenderingLOD
+    RenderingOpenGL2
+    RenderingUI
+    RenderingVolume
+    RenderingVolumeOpenGL2
+    sqlite
+    vtksys
+    verdict
+    ViewsContext2D
+    ViewsCore
+    ViewsInfovis
+    zlib
+)
 
 set(IMPORTER_SOURCE
     Importers/abstractsource.cpp
@@ -39,6 +146,8 @@ set(IMPORTER_SOURCE
     Importers/rawpointssource.h
     Importers/vosourcenew.cpp
     Importers/vosourcenew.h
+    Importers/vtksource.cpp
+    Importers/vtksource.h
 )
 
 set(UTILS_SOURCE
@@ -56,11 +165,9 @@ set(UTILS_SOURCE
     ${UTILS_SOURCE_DIR}/visivoutils.h
 )
 
+find_package(HDF5 REQUIRED)
+
 add_executable(VisIVOImporter ${IMPORTER_SOURCE} ${UTILS_SOURCE})
-
-install(TARGETS VisIVOImporter DESTINATION bin)
-
-target_compile_definitions(VisIVOImporter PRIVATE LIGHT)
 
 target_include_directories(VisIVOImporter PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/Importers
@@ -69,6 +176,17 @@ target_include_directories(VisIVOImporter PRIVATE
 
 target_link_libraries(VisIVOImporter PRIVATE
     CFITSIO::CFITSIO
-    HDF5::HDF5
     CURL::libcurl
+    ${MPI_C_LIBRARIES}
+    OpenMP::OpenMP_CXX
+    ${VTK_LIBRARIES}
+    stdc++fs
 )
+
+install(TARGETS VisIVOImporter DESTINATION bin)
+
+target_compile_definitions(VisIVOImporter PRIVATE LIGHT)
+
+set(CXXFLAGS  -fopenmp)
+set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
+target_link_libraries(VisIVOImporter PUBLIC MPI::MPI_CXX)

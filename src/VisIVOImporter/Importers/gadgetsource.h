@@ -40,7 +40,7 @@ struct headerType2
   double   redshift[1];
   int      flag_sfr[1];
   int      flag_feedback[1];
-  int      npartTotal[6];
+  unsigned int      npartTotal[6];
   int      foling[1];
   int      num_files[1];
   double   BoxSize[1];
@@ -101,8 +101,10 @@ class GadgetSource : public AbstractSource
     int readData();
         
   private:
-    std::vector <std::string> m_fieldsNames;
-    int m_nRows; 
+    std::vector <std::string> m_fieldsNames;   
+    unsigned int      npart_total[6];
+    int numFiles = 1;
+    int m_nRows;
     char m_dataType, m_Endian;
     
      int m_snapformat;
@@ -114,8 +116,11 @@ class GadgetSource : public AbstractSource
     void swapHeaderType2();
     void swapHeaderType1();
     
-    struct headerType2 m_pHeaderType2;
+    std::vector<headerType2> m_pHeaderType2;
     struct headerType1 m_pHeaderType1;
+    int readMultipleHeaders(int, std::string, bool);
+    int checkMultipleFiles(int, std::string);
+    void updateNpart2(int);
   
 };
   
