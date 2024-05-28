@@ -28,7 +28,6 @@
 #endif
 #include "vspointdistributeop.h"
 #include "vstable.h"
-#include "VisIVOFiltersConfigure.h"
 
 const unsigned int VSPointDistributeOp::MAX_NUMBER_TO_REDUCE_ROW = 100000;
 const unsigned int VSPointDistributeOp::MIN_NUMBER_OF_ROW = 100;

@@ -21,12 +21,6 @@ set(FILTERS_SOURCE
 set(UTILS_SOURCE
     ${UTILS_SOURCE_DIR}/parametersparser.cpp
     ${UTILS_SOURCE_DIR}/parametersparser.h
-    ${UTILS_SOURCE_DIR}/tinystr.cpp
-    ${UTILS_SOURCE_DIR}/tinystr.h
-    ${UTILS_SOURCE_DIR}/tinyxml.cpp
-    ${UTILS_SOURCE_DIR}/tinyxml.h
-    ${UTILS_SOURCE_DIR}/tinyxmlerror.cpp
-    ${UTILS_SOURCE_DIR}/tinyxmlparser.cpp
     ${UTILS_SOURCE_DIR}/util.cpp
     ${UTILS_SOURCE_DIR}/util.h
     ${UTILS_SOURCE_DIR}/vsobject.cpp
