@@ -18,7 +18,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include "vstableop.h"
-#include "historyXmlWriter.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -95,64 +94,6 @@ bool VSTableOp::addParameter(std::string key,std::string value)
    return true; 
 }
 
-// bool VSTableOp::setParameters(std::string parameters)
-// {
-//   std::string dummy = "";
-//   std::string key   = "";
-//   std::string value = "";
-//   
-//   std::stringstream ss(parameters);
-//   std::streampos pos;
-// 
-//   while(!ss.eof())
-//   {
-//     ss >> dummy;
-// 
-//     if(dummy[0] != '-')
-//       return false;
-// 
-//     dummy.erase(0, 1);
-// 
-//     if(dummy[0] == '-')
-//       dummy.erase(0, 1);
-// 
-//     key = dummy;
-// 
-//     if(ss.eof())
-//     {
-//       value = "unknown";
-// 
-//       m_parameters.insert(make_pair(key, value));
-//       
-//       break;
-//     }
-// 
-//     pos = ss.tellg();
-//     
-//     ss >> dummy;
-// 
-//     if(dummy[0] == '-')
-//     {
-//       if(ss.eof())
-//         ss.clear();
-// 
-//       ss.seekg(pos);
-// 
-//       value = "unknown";
-// 
-//       m_parameters.insert(make_pair(key, value));
-// 
-//       continue;
-//     }
-// 
-//     value = dummy;
-// 
-//     m_parameters.insert(make_pair(key, value));
-//   }
-// 
-//   return false;
-// }
-
 std::string VSTableOp::getParameterAsString(std::string parameter)
 {
   if(!m_parameters.count(parameter))
@@ -202,13 +143,3 @@ int VSTableOp::getMaxNumberInt()
     }
     return m_maxNumberInt;
 }
-
-//---------------------------------------------------------------------
-int VSTableOp::writeHistory (const char* histFile,const char* opName, std::map<std::string,std::string> appParameter, std::vector <std::string> outFilename)
-//---------------------------------------------------------------------
-{
-    new HistoryXmlWriter(histFile, opName,appParameter,outFilename);
-    return 1;
-}
-
-

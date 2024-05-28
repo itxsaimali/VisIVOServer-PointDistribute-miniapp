@@ -55,8 +55,6 @@ class VSTableOp : public VSObject{
 
 #endif
     
-    int writeHistory (const char* histFile,const char* opName,std::map<std::string,std::string> appParameter,  std::vector <std::string> outFilename);
-
     ~VSTableOp();
 
     //bool setParameters(std::string parameters);

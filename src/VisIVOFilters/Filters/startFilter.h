@@ -35,7 +35,6 @@ class startFilter
 {
   public:
     
-    bool m_historyEnabled;
     const char* m_opName;
 
 #ifdef VSMPI
