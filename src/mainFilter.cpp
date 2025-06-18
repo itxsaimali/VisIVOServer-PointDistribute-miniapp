@@ -54,6 +54,7 @@ MPI_Init (&argc, &argv);
 MPI_Comm_size (MPI_COMM_WORLD, &size);
 MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
+
 #endif
 
 
@@ -130,7 +131,7 @@ if(MpiSize>size) MpiSize=size;
 	ranks= new int[MpiSize];
     for(int i=0;i<MpiSize;i++) ranks[i]=i;
     
-    // create a new communicator
+    // create a new cocator
     MPI_Group origGroup, newGroup;
     MPI_Comm NEW_COMM;    
     MPI_Comm_group(MPI_COMM_WORLD, &origGroup);
@@ -141,7 +142,7 @@ if(MpiSize>size) MpiSize=size;
 //////////
     
     
-//startFilter startFilter(appParameters); //default argument MPI_COMM_WORLD assumed in case of MPI
+startFilter startFilter(appParameters); //default argument MPI_COMM_WORLD assumed in case of MPI
 //#ifdef VSMPI
 MPI_Barrier(MPI_COMM_WORLD);
 MPI_Finalize();

@@ -41,13 +41,13 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
     int rank=0, size=1, ierr;
 #ifdef VSMPI
     m_VS_COMM=newcomm;
-    MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
     ierr=MPI_Comm_size (m_VS_COMM, &size);
     if(ierr!=MPI_SUCCESS) return;
     ierr=MPI_Comm_rank (m_VS_COMM, &rank);
     if(ierr!=MPI_SUCCESS) return;
     
-    std::clog<<rank<<" TEST "<<size<<std::endl;
+    std::cout<<rank<<" TEST "<<size<<std::endl;
 #endif
         
     iter =appParameters.find("op");
@@ -84,7 +84,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
         case 12:
         {
             //serial
-            if(rank==0)  //serialized
+            if(1)  //parallel
             {
                 
                 iter =appParameters.find("help");
@@ -112,6 +112,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
                     std::cerr <<"No valid input file table is provided"<<std::endl;
                     return;
                 }
+                
                 
                 VSPointDistributeOp op;
                 op.setParameters(appParameters);

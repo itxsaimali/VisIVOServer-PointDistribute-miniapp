@@ -23,3 +23,5 @@ set(FILTERS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/VisIVOFilters")
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_subdirectory(${FILTERS_SOURCE_DIR})
+
+add_definitions(-DVSMPI)
