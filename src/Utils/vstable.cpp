@@ -52,7 +52,7 @@ VSTable::VSTable()
 
 VSTable::VSTable(std::string locator, std::string name /*= ""*/, std::string description /*= ""*/) //QUI modificata per letture header etc
   : VSObject(name, description)
-{
+{ // does not actually reads file just checks if it exists and saves its location for later use
   bool headerExist=false;
 
   setLocator(locator);
@@ -475,6 +475,8 @@ bool VSTable::writeHeader()
 }
 
 //-------------------
+// every process calls this function only once for its own range of rows
+// therefore each process only reads a chunk of data not the complete file
 int VSTable::getColumn(int colNumber,float *Col, int fromRow, int toRow)
 //-------------------
 {
@@ -529,7 +531,7 @@ int VSTable::getColumn(int colNumber,float *Col, int fromRow, int toRow)
       fileInput.seekg(indexOffset,std::ios::cur);
       totNumberToSkip=totNumberToSkip-nSkip;
     }
-    fileInput.read((char *) Col,nLoad*sizeof(float));
+    fileInput.read((char *) Col,nLoad*sizeof(float)); // file reading
   
     fileInput.close();
 #ifdef VSBIGENDIAN

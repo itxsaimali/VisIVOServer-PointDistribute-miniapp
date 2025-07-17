@@ -701,11 +701,10 @@ bool VSPointDistributeOp::execute()
         cellVolume=1.0;
 
 	//parallelization of the CIC with MPI.
-    //MPI_Init(NULL,NULL); 
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    printf(" %d of %d processes \n", rank, size);
+    printf("op.execute() %d of %d processes \n", rank, size);
     
     //Processes data in chunks until all elements (totEle) are handled
     while(totEle!=0)
@@ -716,51 +715,34 @@ bool VSPointDistributeOp::execute()
         //boundary check
         if(toRow>totRows-1)
             toRow=totRows-1;
-	//Synchronization: ensure all processes reach this point before continue.
-        MPI_Barrier(MPI_COMM_WORLD);
-
-    /*    if (rank == 0) 
+        
+        /* 
+        if (rank == 0) 
         {
             m_tables[0]->getColumn(colList, m_nOfCol, fromRow, toRow, m_fArray);
-        }*/
-	//Chunk Size Calculation with domain decomposition
-        int j=0;            //chunk_size = Approximate rows per process.
-        int chunk_size=(toRow-fromRow+1) / size +1;
-        int sendcounts[size];  // Different counts for each process
-        int displs[size];  // Starting index for each process
-        
-        //Distributes rows among processes
-        for(int i=0; i<toRow-fromRow+1; i+=chunk_size)
-        {
-            displs[j] = i;
-            //Each process will work on sendcounts[rank] rows starting at displs[rank]
-            sendcounts[j] = chunk_size;
-            if (i+chunk_size > toRow-fromRow+1)
-                sendcounts[j] = (toRow-fromRow+1) - i;
-            j++;
         }
-        //Allocates temporary storage for each process data
-        float *temp[3];
-        for (int i = 0; i < 3; i++)
-            temp[i]=new  float[sendcounts[rank]]; //Number of rows this process handles
-            //parallelization with distributed memory model
-            //Each process retrieves only its assigned rows from the table
-            m_tables[0]->getColumn(  
-            colList,             // List of columns to retrieve
-            m_nOfCol,            // Number of columns
-            fromRow + displs[rank],      // Start row (process-specific)
-            fromRow + displs[rank] + sendcounts[rank] - 1,  // End row (process-specific)
-            temp                //output buffer
-        );
-        //Copies data from temporary arrays to main storage (m_fArray)
-        for (int i = 0; i < 3; i++)
-            for (int j = displs[rank]; j < displs[rank] + sendcounts[rank]; j++)
-                m_fArray[i][j] = temp[i][j - displs[rank]];
+        */
 
+        // parallel
+        MPI_Barrier(MPI_COMM_WORLD);
 
-        for (int i = 0; i < 3; i++)
-            delete temp[i];
-            
+        int chunk_size=(toRow-fromRow+1) / size +1;
+
+        int start_chunk, end_chunk;
+        start_chunk = fromRow + chunk_size*rank;
+        end_chunk = fromRow + chunk_size*(rank+1);
+
+        if (end_chunk > toRow-fromRow+1)
+            end_chunk = toRow-fromRow+1;
+
+        // every process reads its own chunk of the defined range [start_chunk, end_chunk]
+        m_tables[0]->getColumn(
+                colList, 
+                m_nOfCol, 
+                start_chunk, 
+                end_chunk-1,
+                m_fArray
+            );
             
             //ngp
             
@@ -852,8 +834,9 @@ bool VSPointDistributeOp::execute()
 
             MPI_Barrier(MPI_COMM_WORLD);
             // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
-            //Each process handles its assigned points (ptId range)
-            for (int ptId=displs[rank]; ptId < displs[rank] + sendcounts[rank]; ptId++) // Parallel
+            //Each process handles its assigned data (ptId range)
+        
+            for (int ptId=start_chunk; ptId < end_chunk; ptId++) // Parallel
             {
                 //std::clog<<ptId<<std::endl;
                 wc=0.;
@@ -972,40 +955,31 @@ bool VSPointDistributeOp::execute()
                 
             } //for(... ptId..)
 
+
+		    // Collecting the results from all processes
             MPI_Barrier(MPI_COMM_WORLD);
-		//Nested Loops for Grid Processing
             for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
             {
                 for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
                 {
                     float global_sum=0.;
-                 //Data collection | MPI_Reduce for Global Summation
-                //MPI_Reduce combines all partial results to process 0    
-                 MPI_Reduce(                
-			    &m_grid[x][y],       // Local value to contribute
-			    &global_sum,        // Final result (only on root)
-			    1,                  // Count of elements
-			    MPI_FLOAT,          
-			    MPI_SUM,            // Operation (sum all values)
-			    0, 
-			    MPI_COMM_WORLD 
-			    );
+                    //Data collection | MPI_Reduce for Global Summation
+                    //MPI_Reduce combines all partial results to process 0    
+                    MPI_Reduce(                
+                            &m_grid[x][y],       // Local value to contribute
+                            &global_sum,        // Final result (only on root)
+                            1,                  // Count of elements
+                            MPI_FLOAT,          
+                            MPI_SUM,            // Operation (sum all values)
+                            0,                  // destinated rank
+                            MPI_COMM_WORLD 
+                        );
 
-
-                
-                //Storing the Global Sum on the Root Process
+                    //Storing the Global Sum on the Root Process
                     if (rank == 0)
                         m_grid[x][y]=global_sum;
                 }
             }
-        
-          /*
-          MPI_Finalize();
-            if (rank != 0) {
-               exit(0);  // Force terminate all except root
-            } 
-            */
-
         
 
         } // close if cic

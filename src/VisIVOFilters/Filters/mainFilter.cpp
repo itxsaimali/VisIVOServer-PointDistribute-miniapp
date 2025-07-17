@@ -8,7 +8,7 @@
 #include "parametersparser.h"
 #include "startFilter.h"
 #ifdef VSMPI
-#pragma message "MPI-PARALLEL compilation"
+#pragma message "MPI-PARALLEL compilation" // Setting up the runtime environment (MPI or serial).
 #include "mpi.h"
 #else
 #pragma message "SERIAL compilation"
@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     bool paramFileGiven=false;
 
 #ifdef VSMPI
+// parallel environment for all processes
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
     std::cout << "MPI is NOT enabled!" << std::endl;
     
 #endif
-
+    //Parameter Parsing Logic:
     if(argc==2)
     {
         paramFileGiven=true;
@@ -44,11 +45,13 @@ int main(int argc, char *argv[])
         if (argStr=="--op"||argStr=="-op")
             paramFileGiven=false;
         if (argStr=="-help"||argStr=="--help")
+
             paramFileGiven=false;
         if(paramFileGiven)
             paramFilename=argStr;
     }
-
+    //main code directly uses the ParametersParser class. 
+    //It represent myparser,which encapsulates the complex parsing logic.
     if(paramFileGiven)
     {
         ParametersParser myparser(paramFilename,1);
@@ -95,8 +98,9 @@ int main(int argc, char *argv[])
         ParametersParser myparser(commandParametersSStream.str());
         appParameters=myparser.getParameters();
     }
-
-    int MpiSize=size;
+    //MPI Sub-Communicator Management (MPI only)
+    //It creates a new MPI communicator (NEW_COMM) containing only selected ranks.
+    int MpiSize=size;  //allow available MPI processes(mpisize parameter)to perform the main computation.
     iter=appParameters.find("mpisize");
     if(iter != appParameters.end())
         MpiSize=atoi(iter->second.c_str());
@@ -108,7 +112,7 @@ int main(int argc, char *argv[])
 
     
     printf(" MpiSize %d \n", MpiSize);
-
+    //Directly interacts with MPI group and communicator functions 
     MPI_Group origGroup, newGroup;
     MPI_Comm NEW_COMM;
     MPI_Comm_group(MPI_COMM_WORLD, &origGroup);
@@ -128,7 +132,10 @@ int main(int argc, char *argv[])
     
     delete[] ranks;
 #else
-    startFilter startFilter(appParameters);
+    //Core Application Logic Invocation
+    //Passing control and configuration to  complex parsing logic(startFilter, which then call vspointdistributeop.cpp).
+    //This creates an object startFilter, which then call vspointdistributeop.cpp
+    startFilter startFilter(appParameters); //// Parallel execution
 #endif
 
     return EXIT_SUCCESS;

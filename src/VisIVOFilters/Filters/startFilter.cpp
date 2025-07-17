@@ -24,23 +24,25 @@
 #include <sstream>
 #include <string>
 
-#include "vstable.h"
+#include "vstable.h" // Assumed to define VSTable class for data handling
 
-#include "vspointdistributeop.h"
-#include "startFilter.h"
+#include "vspointdistributeop.h" // Custom header for point distribution operation
+#include "startFilter.h"  // Self-header for class definition
 
+//#ifdef VSMPI shows constructor expects MPI_Comm object, allowing main.cpp to pass the NEW_COMM if in parallel mode. 
 #ifdef VSMPI
 #include "mpi.h"
 startFilter::startFilter(std::map<std::string,std::string> appParameters,MPI_Comm newcomm)
 #else
 startFilter::startFilter(std::map<std::string,std::string> appParameters)
 #endif
-
-{
+    //Constructor Initialization
+{      //It declares local variables rank, size, and ierr.
     std::map<std::string,std::string>::iterator iter;
     int rank=0, size=1, ierr;
 #ifdef VSMPI
     m_VS_COMM=newcomm;
+    //Sets MPI to return error codes instead of stucking the program on errors,
     MPI_Comm_set_errhandler(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
     ierr=MPI_Comm_size (m_VS_COMM, &size);
     if(ierr!=MPI_SUCCESS) return;
@@ -49,8 +51,8 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
     
     std::cout<<rank<<" TEST "<<size<<std::endl;
 #endif
-        
-    iter =appParameters.find("op");
+       //Operation Lookup and Dispatch. 
+    iter =appParameters.find("op"); //This section parses the op (operation) parameter from the appParameters map.
     if( iter == appParameters.end())
     {
         if (rank==0) {
@@ -71,7 +73,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
     appParameters.erase(iter);
     int idOp=-1;
     
-    
+    //Operation Execution (switch statement for "pointdistribute").
     if(sstreamOp.str()=="pointdistribute") idOp=12;
     
     std::vector <std::string> valOutFilename;
@@ -83,45 +85,39 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
             /*** PointDistribute  OP **/
         case 12:
         {
-            //serial
-            if(1)  //parallel
+        
+            VSPointDistributeOp op;
+            
+            iter =appParameters.find("help");
+            if( iter != appParameters.end())
             {
-                
-                iter =appParameters.find("help");
-                if( iter != appParameters.end())
-                {
-                    VSPointDistributeOp op;
-                    op.printHelp();
-                    return;
-                }
-                
-                iter =appParameters.find("file");
-                if( iter == appParameters.end())
-                {
-                    std::cerr <<"No input file table is provided"<<std::endl;
-                    return;
-                }
-                std::stringstream sFilename(iter->second);
-                // appParameters.erase(iter);
-                sFilename>>filename;
-                if(filename.find(".bin") == std::string::npos)
-                    filename.append(".bin");
-                VSTable table(filename);
-                if(!table.tableExist())
-                {
-                    std::cerr <<"No valid input file table is provided"<<std::endl;
-                    return;
-                }
-                
-                
-                VSPointDistributeOp op;
-                op.setParameters(appParameters);
-                op.addInput(&table);
-                op.execute();
-                valOutFilename=op.realOutFilename();
-               
-                
+                op.printHelp();
+                return;
             }
+            
+            iter =appParameters.find("file");
+            if( iter == appParameters.end())
+            {
+                std::cerr <<"No input file table is provided"<<std::endl;
+                return;
+            }
+
+            std::stringstream sFilename(iter->second);
+            sFilename>>filename;
+            if(filename.find(".bin") == std::string::npos)
+                filename.append(".bin");
+            VSTable table(filename);
+            if(!table.tableExist())
+            {
+                std::cerr <<"No valid input file table is provided"<<std::endl;
+                return;
+            }
+            op.setParameters(appParameters);
+            op.addInput(&table);
+            MPI_Barrier(MPI_COMM_WORLD);
+            op.execute();
+            valOutFilename=op.realOutFilename();
+
             break;
         }
             /*** END PointDistribute OP **/
