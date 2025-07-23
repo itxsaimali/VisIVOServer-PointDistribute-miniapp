@@ -91,7 +91,8 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
             iter =appParameters.find("help");
             if( iter != appParameters.end())
             {
-                op.printHelp();
+                if (rank == 0)
+                    op.printHelp();
                 return;
             }
             
