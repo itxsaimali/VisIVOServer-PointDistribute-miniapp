@@ -7,6 +7,7 @@
 #include <map>
 #include "parametersparser.h"
 #include "startFilter.h"
+#include "vstable.h" // <--- ADD THIS LINE
 #ifdef VSMPI
 #pragma message "MPI-PARALLEL compilation" // Setting up the runtime environment (MPI or serial).
 #include "mpi.h"
@@ -37,6 +38,8 @@ int main(int argc, char *argv[])
     
 #endif
     //Parameter Parsing Logic:
+  // if (rank == 0) // <--- ADD THIS LINE
+//{       
     if(argc==2)
     {
         paramFileGiven=true;
@@ -129,8 +132,8 @@ int main(int argc, char *argv[])
     
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
-    
     delete[] ranks;
+//}
 #else
     //Core Application Logic Invocation
     //Passing control and configuration to  complex parsing logic(startFilter, which then call vspointdistributeop.cpp).

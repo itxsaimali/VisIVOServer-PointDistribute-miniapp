@@ -88,33 +88,107 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
         
             VSPointDistributeOp op;
             
-            iter =appParameters.find("help");
+            /*iter =appParameters.find("help"); 
             if( iter != appParameters.end())
-            {
-                if (rank == 0)
-                    op.printHelp();
+            {                                  //applied if statement only to print help by rank == 0
+                op.printHelp();                    
                 return;
             }
-            
+        
+        
             iter =appParameters.find("file");
             if( iter == appParameters.end())
             {
                 std::cerr <<"No input file table is provided"<<std::endl;
                 return;
             }
+            
 
             std::stringstream sFilename(iter->second);
             sFilename>>filename;
             if(filename.find(".bin") == std::string::npos)
                 filename.append(".bin");
             VSTable table(filename);
+            
             if(!table.tableExist())
             {
                 std::cerr <<"No valid input file table is provided"<<std::endl;
                 return;
             }
             op.setParameters(appParameters);
+            op.addInput(&table);*/
+            int signal = 0;
+            if (rank == 0)
+            {
+                iter =appParameters.find("help"); 
+                if( iter != appParameters.end())
+                {                                  //applied if statement only to print help by rank == 0
+                    op.printHelp();                    
+                    signal = 1;
+                    MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                    return;
+                }
+            
+            
+                iter =appParameters.find("file");
+                if( iter == appParameters.end())
+                {
+                    std::cerr <<"No input file table is provided"<<std::endl;
+                    signal = 1;
+                    MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                    return;
+                }
+                
+
+                std::stringstream sFilename(iter->second);
+                sFilename>>filename;
+                if(filename.find(".bin") == std::string::npos)
+                    filename.append(".bin");
+
+                signal = 0;
+                MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                
+            }
+            else
+            {
+                MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                if (signal == 1)
+                    return;
+            }    
+            MPI_Barrier(MPI_COMM_WORLD);
+            if (rank == 0)
+            {
+                int string_length = filename.length(); // Get the number of characters
+                MPI_Bcast(&string_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                MPI_Bcast((void*)filename.data(), string_length, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+            }
+            else
+            {
+                int received_length;
+
+                MPI_Bcast(&received_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                filename.resize(received_length);
+                MPI_Bcast((void*)filename.data(), received_length, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+            }
+
+            VSTable table(filename);
+            if (rank == 0)
+            {
+                if(!table.tableExist())
+                {
+                    std::cerr <<"No valid input file table is provided"<<std::endl;
+                    int exit_flag = 1;
+                    MPI_Bcast(&exit_flag, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                    return;
+                }
+            }
+
+            MPI_Barrier(MPI_COMM_WORLD);
+            op.setParameters(appParameters);
             op.addInput(&table);
+            
             MPI_Barrier(MPI_COMM_WORLD);
             op.execute();
             valOutFilename=op.realOutFilename();
