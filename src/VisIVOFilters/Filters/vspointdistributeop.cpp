@@ -732,15 +732,15 @@ bool VSPointDistributeOp::execute()
         start_chunk = fromRow + chunk_size*rank;
         end_chunk = fromRow + chunk_size*(rank+1);
 
-        if (end_chunk > toRow-fromRow+1)
-            end_chunk = toRow-fromRow+1;
+        if (end_chunk > toRow)
+            end_chunk = toRow;
 
         // every process reads its own chunk of the defined range [start_chunk, end_chunk]
         m_tables[0]->getColumn(
                 colList, 
                 m_nOfCol, 
                 start_chunk, 
-                end_chunk-1,
+                end_chunk,
                 m_fArray
             );
             
@@ -836,7 +836,7 @@ bool VSPointDistributeOp::execute()
             // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
             //Each process handles its assigned data (ptId range)
         
-            for (int ptId=start_chunk; ptId < end_chunk; ptId++) // Parallel
+            for (int ptId=0; ptId < end_chunk-start_chunk+1; ptId++) // Parallel
             {
                 //std::clog<<ptId<<std::endl;
                 wc=0.;
