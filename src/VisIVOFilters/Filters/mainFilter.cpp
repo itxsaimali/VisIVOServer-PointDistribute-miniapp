@@ -3,11 +3,13 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <chrono>
 #include <vector>
 #include <map>
 #include "parametersparser.h"
 #include "startFilter.h"
 #include "vstable.h" // <--- ADD THIS LINE
+
 #ifdef VSMPI
 #pragma message "MPI-PARALLEL compilation" // Setting up the runtime environment (MPI or serial).
 #include "mpi.h"
@@ -18,7 +20,7 @@
 int main(int argc, char *argv[])
 {
 #ifdef VSMPI
-    std::cout<<"VSMPI"<<std::endl;
+    // std::cout<<"VSMPI"<<std::endl;
 #endif
     int size=1,rank=0;
     std::string paramFilename;
@@ -32,7 +34,8 @@ int main(int argc, char *argv[])
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::cout << "MPI is enabled!" << std::endl;
+    // if (rank == 0)
+    //    std::cout << "MPI is enabled!" << std::endl;
 #else
     std::cout << "MPI is NOT enabled!" << std::endl;
     
@@ -114,7 +117,7 @@ int main(int argc, char *argv[])
     for(int i=0;i<MpiSize;i++) ranks[i]=i;
 
     
-    printf(" MpiSize %d \n", MpiSize);
+    //printf(" MpiSize %d \n", MpiSize);
     //Directly interacts with MPI group and communicator functions 
     MPI_Group origGroup, newGroup;
     MPI_Comm NEW_COMM;
@@ -125,13 +128,24 @@ int main(int argc, char *argv[])
     int trank, tsize;
     MPI_Comm_rank(MPI_COMM_WORLD, &trank);
     MPI_Comm_size(MPI_COMM_WORLD, &tsize);
-    printf(" START %d of %d processes \n", trank, tsize);
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    MPI_Barrier(MPI_COMM_WORLD);
     
     startFilter startFilter(appParameters, NEW_COMM);
-    printf(" END %d of %d processes \n", trank, tsize);
+    
     
     MPI_Barrier(MPI_COMM_WORLD);
+    auto end = std::chrono::high_resolution_clock::now();
+
     MPI_Finalize();
+
+    if (rank == 0)
+    {
+        // Calculate the duration
+        std::chrono::duration<double> duration = end - start;
+        std::cout << "Num of processes: " << size << std::endl << "Execution time: " << duration.count() << " seconds" << std::endl;
+    }
     delete[] ranks;
 //}
 #else

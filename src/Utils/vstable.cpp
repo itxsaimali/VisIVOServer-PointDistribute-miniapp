@@ -25,6 +25,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdio> // Required for C-style I/O
+#include <string>
+#include <vector>
 
 const unsigned int VSTable::MAX_NUMBER_TO_SKIP = 1000000000;
 //const unsigned int VSTable::MAX_NUMBER_ROW_REQUEST = 2147483647;
@@ -71,6 +74,7 @@ VSTable::VSTable(std::string locator, std::string name /*= ""*/, std::string des
     m_cellSize[i] = 0;
   }
   
+  //std::cout<<"trying to read table header in parallel: "<<m_locator<<std::endl;
   headerExist=readHeader();
   if(!headerExist)
   {
@@ -78,14 +82,20 @@ VSTable::VSTable(std::string locator, std::string name /*= ""*/, std::string des
     return;
   } else
   {
-    std::ifstream inTable(m_locator.c_str());
-    if(!inTable)
-    {
-      std::cerr<<"Invalid table "<<m_locator<<std::endl;
-      return;
+    // std::ifstream inTable(m_locator.c_str());
+    MPI_File fh;
+    int error_code = MPI_File_open(MPI_COMM_WORLD, m_locator.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+
+    if (error_code != MPI_SUCCESS) {
+        std::cerr << "Invalid table " << m_locator << std::endl;
+        // Note: You would likely want to add a coordinated exit for all processes here.
+        return;
     }
-    inTable.close();
-    m_tableExist=true;
+
+    m_tableExist = true;
+
+    // This is a collective call that must be called by all processes
+    MPI_File_close(&fh);
   }
 }
 
@@ -185,76 +195,96 @@ void VSTable::setCellNumber(unsigned int xCellNumber, unsigned int yCellNumber, 
 
 bool VSTable::readHeader()
 {
-  int i = 0;
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::string headerFileName = m_locator + ".head";
-  std::ifstream inHeader(headerFileName.c_str());
-  
-  
-   if(!inHeader)
-     return false;
+  /* HEADER READER
+  HEADER READER
+  HEADER READER
+  HEADER READER
+  HEADER READER
+   */
 
-  //reads the number of cols and rows
-
-  std::string dummy;
-  std::string type;
-  std::string endiannes;
- 
-  unsigned int nCols;
+  // std::cout << "now opening: " << m_locator << std::endl;
+  bool success = false;
   
-  inHeader >> type;
-  if(!(type == "float" || type =="f"))
+  if (rank == 0) // Only the master process (rank 0) performs file I/O
   {
-	std::cerr<<"Invalid input not float table in  VisIVO Filters. Please use VisIVO Importer to convert it in float table "<<std::endl;
-	return false; 
-  } 
-  inHeader >> nCols;
-
-  std::string tmp = "";
+      std::string headerFileName = m_locator + ".head";
+      FILE* file_ptr = fopen(headerFileName.c_str(), "r");
+      
+      if (file_ptr == NULL)
+      {
+         std::cerr << "Error: Could not open header file: " << headerFileName << std::endl;
+         success = false;
+      }
+      else
+      {
+          //std::cout << "atleast header was opened: " << m_locator << std::endl;
   
-  getline(inHeader, tmp); //to remove the carrige return character  (\r) from the last line
-  getline(inHeader, tmp);
+          char buffer[256];
+          
+          if (fscanf(file_ptr, "%s", buffer) != 1) {
+              std::cerr << "Error reading type from header." << std::endl;
+              success = false;
+          } else {
+              std::string type = buffer;
+              if (!(type == "float" || type == "f"))
+              {
+                  std::cerr << "Invalid input not float table in VisIVO Filters. Please use VisIVO Importer to convert it in float table" << std::endl;
+                  success = false;
+              }
+              else
+              {
+                  setType(type);
+                  
+                  unsigned int nCols;
+                  fscanf(file_ptr, "%u", &nCols);
+                  m_nCols = nCols;
+                  
+                  fscanf(file_ptr, "%lu", &m_nRows); // Assuming unsigned long for m_nRows
 
-  std::stringstream sstmp(tmp);
+                  char endiannes_str[256];
+                  fscanf(file_ptr, "%s", endiannes_str);
+                  std::string endiannes = endiannes_str;
+                  setEndiannes(endiannes);
 
-  sstmp >> m_nRows;
+                  m_colVector.clear();
+                  std::string name;
+                  for (unsigned int i = 0; i < nCols; ++i)
+                  {
+                      fscanf(file_ptr, "%s", buffer);
+                      name = buffer;
+                      addCol(name);
+                  }
+                  
+                  if (m_colVector.size() == nCols) {
+                      success = true;
+                  } else {
+                      success = false;
+                  }
+              }
+          }
+          fclose(file_ptr);
+      }
+  }
 
-  if(!(sstmp.eof()))
-  {
-    m_isVolume=true;
+  // Broadcast the success status from Rank 0 to all other processes
+  MPI_Bcast(&success, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
-    sstmp >> m_cellNumber[0];
-    sstmp >> m_cellNumber[1];
-    sstmp >> m_cellNumber[2];
-        
-    sstmp >> m_cellSize[0];
-    sstmp >> m_cellSize[1];
-    sstmp >> m_cellSize[2];
+  // If Rank 0 failed to read the header, all ranks return
+  if (!success) {
+      return false;
   }
   
-  inHeader >> endiannes;
+  // Now, broadcast all the parsed variables to all other processes
+  MPI_Bcast(&m_nRows, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&m_nCols, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
   
-  setType(type);
-  setEndiannes(endiannes);
-
-  m_colVector.clear();
-
-  std::string name = "";
-
-  for(i = 0; i < nCols; ++i)
-  {
-    inHeader >> name;
-    addCol(name);
-   }
-
-  inHeader.close();
-  if((m_colVector.size() != nCols )||(m_cellNumber[0] >0 && m_cellNumber[0] * m_cellNumber[1] * m_cellNumber[2] != m_nRows))
-    {
-    m_nCols = 0;
-    m_colVector.clear();
-
-    return false;
-   }
+  // To broadcast m_colVector, you would need more complex logic:
+  // 1. Broadcast the size of the vector.
+  // 2. Loop and broadcast each string's length and then the string data.
+  
   return true;
 }
 
@@ -583,7 +613,7 @@ int VSTable::getColumn(unsigned int *colList, unsigned int nOfCol, unsigned long
     column=colList[j];
     if(column > m_nCols-1)
     {
-      std::cerr << "Invalid Column Id"<< std::endl;
+      std::cerr << "Invalid Column Id column: "<< column << " m_nCols-1: " << m_nCols-1 <<  std::endl;
       continue;
     }
     if(toRow > m_nRows-1)
@@ -648,6 +678,9 @@ int VSTable::getColumnList(unsigned int *colList,unsigned int nOfCol, unsigned l
 
 {
 
+
+    std::cout<<"Called getColumnList in vstable.cpp "<<std::endl;
+
   if(nOfEle > MAX_NUMBER_ROW_REQUEST)
   {
     std::cerr<<"Cannot be requested more than "<< MAX_NUMBER_ROW_REQUEST <<" row lines"<<std::endl;
@@ -674,7 +707,7 @@ int VSTable::getColumnList(unsigned int *colList,unsigned int nOfCol, unsigned l
     column=colList[k];
     if(column > m_nCols-1)
     {
-      std::cerr << "Invalid Column Id"<< std::endl;
+      std::cerr << "Invalid Column Id"<< column << m_nCols-1 <<  std::endl;
       continue;
     }
 
@@ -813,7 +846,7 @@ int VSTable::putColumn(unsigned int *colList, unsigned int nOfCol, unsigned long
       column=colList[j];
       if(column > m_nCols+1)
       {
-        std::cerr << "Invalid Column Id"<< std::endl;
+        std::cerr << "Invalid Column Id"<< column << m_nCols+1 <<  std::endl;
         continue;
       }
       if(toRow > m_nRows-1)

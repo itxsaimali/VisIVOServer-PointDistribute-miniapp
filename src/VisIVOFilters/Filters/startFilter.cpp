@@ -49,7 +49,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
     ierr=MPI_Comm_rank (m_VS_COMM, &rank);
     if(ierr!=MPI_SUCCESS) return;
     
-    std::cout<<rank<<" TEST "<<size<<std::endl;
+    //std::cout<<rank<<" TEST "<<size<<std::endl;
 #endif
        //Operation Lookup and Dispatch. 
     iter =appParameters.find("op"); //This section parses the op (operation) parameter from the appParameters map.
@@ -119,7 +119,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
             op.addInput(&table);*/
             int signal = 0;
             if (rank == 0)
-            {
+            {                   //Help and File Validation
                 iter =appParameters.find("help"); 
                 if( iter != appParameters.end())
                 {                                  //applied if statement only to print help by rank == 0
@@ -134,17 +134,18 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
                 if( iter == appParameters.end())
                 {
                     std::cerr <<"No input file table is provided"<<std::endl;
+                    //initial checks pass, Rank 0 sets signal = 0 and broadcasts it
                     signal = 1;
                     MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     return;
                 }
                 
-
+                //Filename Distribution
                 std::stringstream sFilename(iter->second);
                 sFilename>>filename;
                 if(filename.find(".bin") == std::string::npos)
                     filename.append(".bin");
-
+                //Rank 0 Sends Filename
                 signal = 0;
                 MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
                 
@@ -161,7 +162,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
                 int string_length = filename.length(); // Get the number of characters
                 MPI_Bcast(&string_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
                 MPI_Bcast((void*)filename.data(), string_length, MPI_CHAR, 0, MPI_COMM_WORLD);
-
+                //Other Ranks Receive Filename
             }
             else
             {
@@ -172,10 +173,10 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
                 MPI_Bcast((void*)filename.data(), received_length, MPI_CHAR, 0, MPI_COMM_WORLD);
 
             }
-
+                //Final File Validation 
             VSTable table(filename);
             if (rank == 0)
-            {
+            {               //Rank 0 constructs a VSTable
                 if(!table.tableExist())
                 {
                     std::cerr <<"No valid input file table is provided"<<std::endl;
@@ -184,11 +185,12 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
                     return;
                 }
             }
-
+            //Final Synchronization and Execution
             MPI_Barrier(MPI_COMM_WORLD);
             op.setParameters(appParameters);
             op.addInput(&table);
             
+            // Setup and Execute
             MPI_Barrier(MPI_COMM_WORLD);
             op.execute();
             valOutFilename=op.realOutFilename();

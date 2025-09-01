@@ -389,27 +389,48 @@ bool VSPointDistributeOp::execute()
         periodic=true;
     VSTable tableGrid;
     std::vector<int> fieldList;
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    // printf("op.execute %d of %d processes \n", rank, size);
+
+
+    std::stringstream ssListparameters;
     // check for points  coordinate columns
     unsigned long long int counterCols=0;
-    std::stringstream ssListparameters;
-    ssListparameters.str(getParameterAsString("points"));
-    while (!ssListparameters.eof())
-    {
-        std::string paramField;
-        ssListparameters>>paramField;
-        if(m_tables[0] -> getColId(paramField)>=0)
+    if (rank == 0) {
+
+        ssListparameters.str(getParameterAsString("points"));
+        while (!ssListparameters.eof())
         {
-            m_colList[counterCols]=m_tables[0] -> getColId(paramField);
-            counterCols++;
-            if(counterCols==3)
-                break;
+            
+            std::string paramField;
+            ssListparameters>>paramField;
+            if(m_tables[0] -> getColId(paramField)>=0)
+            {
+                m_colList[counterCols]=m_tables[0] -> getColId(paramField);
+                counterCols++;
+                if(counterCols==3)
+                    break;
+            }
         }
+
+        MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(m_colList, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
     }
+    else
+    {
+        MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(m_colList, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
+    }
+
     if(counterCols !=3)
     {
-        std::cerr<<"VSPointDistributeOp: Invalid columns in --points argument is given"<<std::endl;
+        std::cerr<<"VSPointDistributeOp: Invalid columns in --points argument is given "<< getParameterAsString("points") <<std::endl;
         return false;
     }
+
     // check for TSC
     if(isParameterPresent("tsc"))
     {
@@ -434,53 +455,80 @@ bool VSPointDistributeOp::execute()
     
     //check grid resolution
     
-    counterCols =0;
-    ssListparameters.clear();
-    ssListparameters.str(getParameterAsString("resolution"));
-    while (!ssListparameters.eof())
+    int vector_size;
+    if (rank == 0)
     {
-        std::string paramField;
-        ssListparameters>>paramField;
-        m_sampleDimensions[counterCols]=atoi(paramField.c_str()); //set resolution
-        if(m_sampleDimensions[counterCols]<=0)
+        counterCols =0;
+        ssListparameters.clear();
+        ssListparameters.str(getParameterAsString("resolution"));
+        while (!ssListparameters.eof())
         {
-            std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
-            return false;
+            std::string paramField;
+            ssListparameters>>paramField;
+            m_sampleDimensions[counterCols]=atoi(paramField.c_str()); //set resolution
+            if(m_sampleDimensions[counterCols]<=0)
+            {
+                std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
+                return false;
+            }
+            counterCols++;
+            if(counterCols==3)
+                break;
         }
-        counterCols++;
-        if(counterCols==3)
-            break;
-    }
-    
+    }    
+
+    MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if(counterCols<3)
     {
         std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
         return false;
     }
-    std::stringstream fieldNameSStream;
-    fieldNameSStream<<getParameterAsString("field");
-    if(fieldNameSStream.str()==""||fieldNameSStream.str()=="unknown")
+
+    MPI_Bcast(m_sampleDimensions, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    if (rank == 0)
     {
-        m_useConstant=true;
-        fieldList.push_back(-1);
-        if(isParameterPresent("constant"))
-            m_constValue=getParameterAsFloat("constant");
-    }else
-    {
-        while (!fieldNameSStream.eof())
+        std::stringstream fieldNameSStream;
+        fieldNameSStream<<getParameterAsString("field");
+        if(fieldNameSStream.str()==""||fieldNameSStream.str()=="unknown")
         {
-            std::string paramField;
-            fieldNameSStream>>paramField;
-            if(m_tables[0] -> getColId(paramField)>=0)
-                fieldList.push_back(m_tables[0] -> getColId(paramField));
-            if(m_avg) break;
+            m_useConstant=true;
+            fieldList.push_back(-1);
+            if(isParameterPresent("constant"))
+                m_constValue=getParameterAsFloat("constant");
+        }else
+        {
+            while (!fieldNameSStream.eof())
+            {
+                std::string paramField;
+                fieldNameSStream>>paramField;
+                if(m_tables[0] -> getColId(paramField)>=0)
+                    fieldList.push_back(m_tables[0] -> getColId(paramField));
+                if(m_avg) break;
+            }
         }
+
+        vector_size = fieldList.size();
     }
+    MPI_Bcast(&m_constValue, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&vector_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&m_useConstant, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+
+
+    if (rank != 0) {
+        // All other ranks resize their vector to match the size received from Rank 0.
+        fieldList.resize(vector_size);
+    }
+    MPI_Bcast(fieldList.data(), vector_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
     if(fieldList.size()<=0)
     {
         std::cerr<<"Pointdistribute. Invalid field is given"<<std::endl;
         return false;
     }
+    
     //prepare colList: list of columns to be read
     unsigned int *colList;
     unsigned int nOfField= fieldList.size();
@@ -505,18 +553,21 @@ bool VSPointDistributeOp::execute()
     
     unsigned long long int totRows=m_tables[0]->getNumberOfRows();
     int maxInt=getMaxNumberInt();
+
     
     if(totRows>maxInt)
         m_nOfRow=maxInt;
     else
         m_nOfRow=totRows;
-    
+
+    // std::cout << " rank " << rank << " totRows " << totRows << " maxInt " << maxInt << " m_nOfRow " << m_nOfRow << std::endl;
+
     unsigned long long int gridPts = m_sampleDimensions[0] * m_sampleDimensions[1] * m_sampleDimensions[2];
     if(gridPts>maxInt)
         m_numNewPts=maxInt;
     else
         m_numNewPts=gridPts;
-    
+
     bool allocationArray=allocateArray((int) fieldList.size());
     
     
@@ -701,10 +752,6 @@ bool VSPointDistributeOp::execute()
         cellVolume=1.0;
 
 	//parallelization of the CIC with MPI.
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    printf("op.execute %d of %d processes \n", rank, size);
     
     //Processes data in chunks until all elements (totEle) are handled
     while(totEle!=0)
@@ -712,6 +759,7 @@ bool VSPointDistributeOp::execute()
         // Table douwnLoad
         fromRow=startCounter;
         toRow=fromRow+m_nOfRow-1;
+
         //boundary check
         if(toRow>totRows-1)
             toRow=totRows-1;
@@ -724,6 +772,12 @@ bool VSPointDistributeOp::execute()
         */
 
         // parallel
+
+        //if (rank == 0)
+        //{
+        //    std::cout << std::endl << std::endl;
+        //    std::cout << " from_row: " << fromRow << " to_row: " << toRow << std::endl;
+        //}
         MPI_Barrier(MPI_COMM_WORLD);
 
         int chunk_size=(toRow-fromRow+1) / size +1;
@@ -743,6 +797,12 @@ bool VSPointDistributeOp::execute()
                 end_chunk,
                 m_fArray
             );
+
+        //std::cout << "rank: "<< rank << " startchunk: " << start_chunk << " endchunk: " << end_chunk << std::endl;
+        //for (int i=0;i<m_nOfCol;i++)
+        //    std::cout <<  "," << colList[i]; 
+        //std::cout << std::endl;
+        
             
             //ngp
             
@@ -830,9 +890,10 @@ bool VSPointDistributeOp::execute()
             float wc=0.;
             unsigned long long int nCell=m_sampleDimensions[0]*m_sampleDimensions[1]*m_sampleDimensions[2];
             // CIC on points
-            printf(" %d of %d processes \n", rank, size);
+            //printf(" %d of %d processes \n", rank, size);
 
             MPI_Barrier(MPI_COMM_WORLD);
+            //printf(" rank %d now entering critical region \n", rank);
             // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
             //Each process handles its assigned data (ptId range)
         
@@ -955,7 +1016,7 @@ bool VSPointDistributeOp::execute()
                 
             } //for(... ptId..)
 
-
+            //std::cout << "rank: " << rank << " now performing reduction... nOfField:" << nOfField << " m_numNewPts:" << m_numNewPts << std::endl;
 		    // Collecting the results from all processes
             MPI_Barrier(MPI_COMM_WORLD);
             for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
@@ -980,6 +1041,7 @@ bool VSPointDistributeOp::execute()
                         m_grid[x][y]=global_sum;
                 }
             }
+            //std::cout << "rank: " << rank << " comlpeted reduction!! " << std::endl;
         
 
         } // close if cic

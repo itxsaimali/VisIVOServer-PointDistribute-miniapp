@@ -24,7 +24,7 @@
 	@author Marco Comparato <marco.comparato@oact.inaf.it>
         @author Ugo Becciani <ugo.becciani@oact.inaf.it>
 */
-
+#include <mpi.h>
 #include "vsobject.h"
 #include <string>
 #include <vector>
