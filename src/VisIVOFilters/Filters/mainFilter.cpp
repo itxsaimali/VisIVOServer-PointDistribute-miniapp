@@ -6,6 +6,7 @@
 #include <chrono>
 #include <vector>
 #include <map>
+#include <omp.h>
 #include "parametersparser.h"
 #include "startFilter.h"
 #include "vstable.h" // <--- ADD THIS LINE
@@ -144,7 +145,10 @@ int main(int argc, char *argv[])
     {
         // Calculate the duration
         std::chrono::duration<double> duration = end - start;
-        std::cout << "Num of processes: " << size << std::endl << "Execution time: " << duration.count() << " seconds" << std::endl;
+        int num_threads=omp_get_max_threads();
+        std::cout << "# of MPI Processes: " << size << std::endl;
+        std::cout << "# of OMP Threads per Proc: " << num_threads << std::endl;
+        std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
     }
     delete[] ranks;
 //}

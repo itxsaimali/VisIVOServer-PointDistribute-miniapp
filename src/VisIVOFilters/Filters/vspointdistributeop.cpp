@@ -25,6 +25,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <omp.h>
 #ifdef WIN32
 #include <time.h>
 #endif
@@ -389,7 +390,7 @@ bool VSPointDistributeOp::execute()
         periodic=true;
     VSTable tableGrid;
     std::vector<int> fieldList;
-
+    //parallelization
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -892,14 +893,22 @@ bool VSPointDistributeOp::execute()
             // CIC on points
             //printf(" %d of %d processes \n", rank, size);
 
+            int num_threads=omp_get_max_threads();
+            float* local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+            bool should_exit = false; // Shared flag
+            int end_limit = end_chunk-start_chunk+1;
             MPI_Barrier(MPI_COMM_WORLD);
             //printf(" rank %d now entering critical region \n", rank);
             // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
             //Each process handles its assigned data (ptId range)
         
-            for (int ptId=0; ptId < end_chunk-start_chunk+1; ptId++) // Parallel
+            #pragma omp parallel for private(wc, norm)
+            for (int ptId=0; ptId < end_limit; ptId++) // Parallel
             {
-                //std::clog<<ptId<<std::endl;
+                if (should_exit)
+                    continue;
+                
+                int thread_id = omp_get_thread_num();
                 wc=0.;
                 float px[3];
                 px[0]=m_fArray[0][ptId];
@@ -984,6 +993,7 @@ bool VSPointDistributeOp::execute()
                 for(int n=0;n<8;n++)
                 {
                     if(ind[n]<0  || ind[n]>=nCell)
+                    
                         continue;
                     if(ind[n]<gridIndex[0] || ind[n]>gridIndex[1]) //ind1 NOT in cache!
                     {
@@ -999,7 +1009,14 @@ bool VSPointDistributeOp::execute()
                             norm=m_constValue;
                         else
                             norm=m_fArray[3+j][ptId];
-                        m_grid[j][ind[n]-gridIndex[0]]+=d[n]*norm/cellVolume;
+                        /*
+                        #pragma omp critical
+                        {
+                            m_grid[j][ind[n]-gridIndex[0]]+=d[n]*norm/cellVolume;
+                        }
+                        */
+                        int index = ind[n]-gridIndex[0];
+                        local_mgrid[num_threads*m_numNewPts*j + m_numNewPts*thread_id + index]+=d[n]*norm/cellVolume;
                         wc+=d[n]*norm;
                         //		outpippo<<"ptId="<<ptId<<" GRID j="<<j<<" i="<<ind[n]-gridIndex[0] <<" curr val="<<d[n]*norm<<" acc="<<m_grid[j][ind[n]-gridIndex[0]]<<std::endl; //AA
                     }
@@ -1008,13 +1025,40 @@ bool VSPointDistributeOp::execute()
                 // end main loop
                 if(wc>1.1*norm*fieldList.size())
                 {
+                    /*
                     std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
                     if(colList!=NULL) delete [] colList;
                     if(gridList!=NULL)delete [] gridList;
                     return false;
+                    */
+                    #pragma omp critical
+                    {
+                        should_exit = true;
+                    }
                 }
                 
             } //for(... ptId..)
+
+            for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
+            {
+                for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+                {
+                    for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                    {
+                        m_grid[x][y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
+                    }
+                }
+            }
+            delete[] local_mgrid;
+
+            MPI_Bcast(&should_exit, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+            if (should_exit)
+            {
+                std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
+                if(colList!=NULL) delete [] colList;
+                if(gridList!=NULL)delete [] gridList;
+                return false;
+            }
 
             //std::cout << "rank: " << rank << " now performing reduction... nOfField:" << nOfField << " m_numNewPts:" << m_numNewPts << std::endl;
 		    // Collecting the results from all processes

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.17)
 
 project(VisIVOServer)
 
+find_package(OpenMP REQUIRED)
+
 # Set a default build type if none was specified
 set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -25,3 +27,8 @@ include_directories(${CMAKE_SOURCE_DIR})
 add_subdirectory(${FILTERS_SOURCE_DIR})
 
 add_definitions(-DVSMPI)
+
+if(OpenMP_CXX_FOUND)
+    # The `OpenMP::OpenMP_CXX` imported target correctly handles all compiler and linker flags.
+    target_link_libraries(VisIVOFilter PRIVATE OpenMP::OpenMP_CXX)
+endif()
