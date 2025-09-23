@@ -25,6 +25,8 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+
+#include <chrono>
 #include <omp.h>
 #ifdef WIN32
 #include <time.h>
@@ -854,6 +856,7 @@ bool VSPointDistributeOp::execute()
                		ind = i3*jkFactor + i2*jFactor + i1;
                     if(ind>nCell-1) continue;
                     
+                 
                     // calculate density
                     
                     if(ind<gridIndex[0] || ind>gridIndex[1]) //ind1 NOT in cache!
@@ -902,6 +905,8 @@ bool VSPointDistributeOp::execute()
             // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
             //Each process handles its assigned data (ptId range)
         
+            auto start = std::chrono::high_resolution_clock::now();
+
             #pragma omp parallel for private(wc, norm)
             for (int ptId=0; ptId < end_limit; ptId++) // Parallel
             {
@@ -1039,19 +1044,70 @@ bool VSPointDistributeOp::execute()
                 
             } //for(... ptId..)
 
+            
+            if (rank == 0) 
+            {
+                auto end = std::chrono::high_resolution_clock::now();
+
+                // Calculate the duration
+                std::chrono::duration<double> duration = end - start;
+            
+                std::cout << "CIC time: " << duration.count() << " seconds" << std::endl;
+            }
+
+            
+            start = std::chrono::high_resolution_clock::now();
+
+            float* thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
             for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
             {
                 for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
                 {
                     for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
                     {
-                        m_grid[x][y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
+                        thread_reduce_mgrid[m_numNewPts*x + y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
                     }
                 }
             }
-            delete[] local_mgrid;
+
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            float* proc_reduce_mgrid;
+            if (rank == 0) 
+            {
+                proc_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            }
+
+            
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            MPI_Reduce(
+                    thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
+                    proc_reduce_mgrid,       // Pointer to the buffer on the root process
+                    nOfField * m_numNewPts,               // Count of elements in a single field/row
+                    MPI_FLOAT,                 // Data type
+                    MPI_SUM,                   // Operation
+                    0,                         // Destination rank
+                    MPI_COMM_WORLD
+                );
+
+            if (rank == 0) 
+            {    
+                for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+                {
+                    for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                    {
+                        m_grid[x][y] += proc_reduce_mgrid[ m_numNewPts*x + y];
+                    }
+                }
+                
+                delete[] proc_reduce_mgrid;
+            }
+
+            delete[] thread_reduce_mgrid;
 
             MPI_Bcast(&should_exit, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+
             if (should_exit)
             {
                 std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
@@ -1060,32 +1116,12 @@ bool VSPointDistributeOp::execute()
                 return false;
             }
 
-            //std::cout << "rank: " << rank << " now performing reduction... nOfField:" << nOfField << " m_numNewPts:" << m_numNewPts << std::endl;
-		    // Collecting the results from all processes
-            MPI_Barrier(MPI_COMM_WORLD);
-            for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+            if (rank == 0)
             {
-                for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
-                {
-                    float global_sum=0.;
-                    //Data collection | MPI_Reduce for Global Summation
-                    //MPI_Reduce combines all partial results to process 0    
-                    MPI_Reduce(                
-                            &m_grid[x][y],       // Local value to contribute
-                            &global_sum,        // Final result (only on root)
-                            1,                  // Count of elements
-                            MPI_FLOAT,          
-                            MPI_SUM,            // Operation (sum all values)
-                            0,                  // destinated rank
-                            MPI_COMM_WORLD 
-                        );
-
-                    //Storing the Global Sum on the Root Process
-                    if (rank == 0)
-                        m_grid[x][y]=global_sum;
-                }
+                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> duration = end - start;
+                std::cout << "Reduction time: " << duration.count() << " seconds" << std::endl;
             }
-            //std::cout << "rank: " << rank << " comlpeted reduction!! " << std::endl;
         
 
         } // close if cic
