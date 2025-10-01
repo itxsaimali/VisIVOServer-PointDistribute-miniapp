@@ -783,7 +783,7 @@ bool VSPointDistributeOp::execute()
         //}
         MPI_Barrier(MPI_COMM_WORLD);
 
-        int chunk_size=(toRow-fromRow+1) / size +1;
+        int chunk_size=((toRow-fromRow+1) / size) +1;
 
         int start_chunk, end_chunk;
         start_chunk = fromRow + chunk_size*rank;
@@ -896,8 +896,19 @@ bool VSPointDistributeOp::execute()
             // CIC on points
             //printf(" %d of %d processes \n", rank, size);
 
+
             int num_threads=omp_get_max_threads();
-            float* local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+    
+            float* local_mgrid = nullptr;
+            local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+            if (local_mgrid == nullptr) { // Check for null pointer
+                std::cout << "Error: Failed to allocate thread_reduce_mgrid." << std::endl;
+            } 
+
+            #pragma omp parallel for
+            for (int x = 0; x < num_threads * m_numNewPts * nOfField; x++)
+                local_mgrid[x] = 0.;
+            
             bool should_exit = false; // Shared flag
             int end_limit = end_chunk-start_chunk+1;
             MPI_Barrier(MPI_COMM_WORLD);
@@ -907,13 +918,17 @@ bool VSPointDistributeOp::execute()
         
             auto start = std::chrono::high_resolution_clock::now();
 
-            #pragma omp parallel for private(wc, norm)
+            #pragma omp parallel for num_threads(num_threads) private(wc, norm)
             for (int ptId=0; ptId < end_limit; ptId++) // Parallel
             {
                 if (should_exit)
                     continue;
                 
-                int thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num(); // gets current thread id
+                int thread_num = omp_get_num_threads(); // gets number of threads
+                if (thread_num != num_threads)
+                    std::cout << "Error: Unexpected number of threads" << thread_num << ", " << num_threads << std::endl;
+
                 wc=0.;
                 float px[3];
                 px[0]=m_fArray[0][ptId];
@@ -1039,6 +1054,7 @@ bool VSPointDistributeOp::execute()
                     #pragma omp critical
                     {
                         should_exit = true;
+                        std::cout << "Error: wc value out of bound" << std::endl;
                     }
                 }
                 
@@ -1056,11 +1072,26 @@ bool VSPointDistributeOp::execute()
             }
 
             
+            MPI_Barrier(MPI_COMM_WORLD);
+            
             start = std::chrono::high_resolution_clock::now();
 
-            float* thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            
+            
+            float* thread_reduce_mgrid = nullptr;
+            thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            if (thread_reduce_mgrid == nullptr) { // Check for null pointer
+                std::cout << ": Failed to allocate thread_reduce_mgrid." << std::endl;
+            } 
+
+            #pragma omp parallel for
+            for (int x = 0; x < m_numNewPts * nOfField; x++)
+                thread_reduce_mgrid[x] = 0.;
+
+
             for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
             {
+                #pragma omp parallel for collapse(2)
                 for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
                 {
                     for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
@@ -1070,18 +1101,23 @@ bool VSPointDistributeOp::execute()
                 }
             }
 
+            
             MPI_Barrier(MPI_COMM_WORLD);
-
-            float* proc_reduce_mgrid;
+            
+            float* proc_reduce_mgrid = nullptr;
             if (rank == 0) 
             {
                 proc_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+                if (proc_reduce_mgrid == nullptr) { // Check for null pointer
+                    std::cout << ": Failed to allocate proc_reduce_mgrid." << std::endl;
+                } 
+
+                #pragma omp parallel for
+                for (int x = 0; x < m_numNewPts * nOfField; x++)
+                    proc_reduce_mgrid[x] = 0.;
             }
-
-            
-            MPI_Barrier(MPI_COMM_WORLD);
-
-            MPI_Reduce(
+             
+            int result_code = MPI_Reduce(
                     thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
                     proc_reduce_mgrid,       // Pointer to the buffer on the root process
                     nOfField * m_numNewPts,               // Count of elements in a single field/row
@@ -1089,10 +1125,17 @@ bool VSPointDistributeOp::execute()
                     MPI_SUM,                   // Operation
                     0,                         // Destination rank
                     MPI_COMM_WORLD
-                );
+                ); 
+
+            if (result_code != MPI_SUCCESS) {
+                // An error occurred during the MPI_Reduce operation
+                std::cout << "MPI Error: MPI_Reduce failed " << std::endl;
+            }
+
 
             if (rank == 0) 
             {    
+                #pragma omp parallel for collapse(2)
                 for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
                 {
                     for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
@@ -1102,9 +1145,9 @@ bool VSPointDistributeOp::execute()
                 }
                 
                 delete[] proc_reduce_mgrid;
-            }
+            } 
 
-            delete[] thread_reduce_mgrid;
+            delete[] thread_reduce_mgrid; 
 
             MPI_Bcast(&should_exit, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
@@ -1270,7 +1313,8 @@ bool VSPointDistributeOp::execute()
     }  // while(totEle!=0)
     // final write of tableGrid
     if(m_avg) nOfField=3;
-    tableGrid.putColumn(gridList,nOfField,gridIndex[0],gridIndex[1],m_grid);  
+    if (rank == 0)
+        tableGrid.putColumn(gridList,nOfField,gridIndex[0],gridIndex[1],m_grid);  
     
     m_executeDone=true;
     /*      	std::ofstream outtFile("/home/ube/test/1.txt",std::ios::out);
