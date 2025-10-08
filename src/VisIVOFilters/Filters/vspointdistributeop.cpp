@@ -816,7 +816,7 @@ bool VSPointDistributeOp::execute()
             // NGP on points
             for (int ptId=0; ptId < toRow-fromRow+1; ptId++)
             {
-                float px[3];
+                double px[3];
                 px[0]=m_fArray[0][ptId];
                 px[1]=m_fArray[1][ptId];
                 px[2]=m_fArray[2][ptId];
@@ -899,8 +899,8 @@ bool VSPointDistributeOp::execute()
 
             int num_threads=omp_get_max_threads();
     
-            float* local_mgrid = nullptr;
-            local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+            double* local_mgrid = nullptr;
+            local_mgrid = new double[ num_threads * m_numNewPts * nOfField ];
             if (local_mgrid == nullptr) { // Check for null pointer
                 std::cout << "Error: Failed to allocate thread_reduce_mgrid." << std::endl;
             } 
@@ -1078,8 +1078,8 @@ bool VSPointDistributeOp::execute()
 
             
             
-            float* thread_reduce_mgrid = nullptr;
-            thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            double* thread_reduce_mgrid = nullptr;
+            thread_reduce_mgrid = new double[ m_numNewPts * nOfField ];
             if (thread_reduce_mgrid == nullptr) { // Check for null pointer
                 std::cout << ": Failed to allocate thread_reduce_mgrid." << std::endl;
             } 
@@ -1104,10 +1104,10 @@ bool VSPointDistributeOp::execute()
             
             MPI_Barrier(MPI_COMM_WORLD);
             
-            float* proc_reduce_mgrid = nullptr;
+            double* proc_reduce_mgrid = nullptr;
             if (rank == 0) 
             {
-                proc_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+                proc_reduce_mgrid = new double[ m_numNewPts * nOfField ];
                 if (proc_reduce_mgrid == nullptr) { // Check for null pointer
                     std::cout << ": Failed to allocate proc_reduce_mgrid." << std::endl;
                 } 
@@ -1121,7 +1121,7 @@ bool VSPointDistributeOp::execute()
                     thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
                     proc_reduce_mgrid,       // Pointer to the buffer on the root process
                     nOfField * m_numNewPts,               // Count of elements in a single field/row
-                    MPI_FLOAT,                 // Data type
+                    MPI_DOUBLE,                 // Data type
                     MPI_SUM,                   // Operation
                     0,                         // Destination rank
                     MPI_COMM_WORLD
