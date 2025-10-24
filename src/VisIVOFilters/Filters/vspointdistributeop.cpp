@@ -17,18 +17,24 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+//#include <mpi.h>       // For MPI parallelization
+//#include <omp.h>       // For OpenMP parallelization
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <cmath>
+
+#include <chrono>
+#include <omp.h>
 #ifdef WIN32
 #include <time.h>
 #endif
 #include "vspointdistributeop.h"
 #include "vstable.h"
 
+ 
 const unsigned int VSPointDistributeOp::MAX_NUMBER_TO_REDUCE_ROW = 100000;
 const unsigned int VSPointDistributeOp::MIN_NUMBER_OF_ROW = 100;
 
@@ -386,27 +392,48 @@ bool VSPointDistributeOp::execute()
         periodic=true;
     VSTable tableGrid;
     std::vector<int> fieldList;
+    //parallelization
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    // printf("op.execute %d of %d processes \n", rank, size);
+
+
+    std::stringstream ssListparameters;
     // check for points  coordinate columns
     unsigned long long int counterCols=0;
-    std::stringstream ssListparameters;
-    ssListparameters.str(getParameterAsString("points"));
-    while (!ssListparameters.eof())
-    {
-        std::string paramField;
-        ssListparameters>>paramField;
-        if(m_tables[0] -> getColId(paramField)>=0)
+    if (rank == 0) {
+
+        ssListparameters.str(getParameterAsString("points"));
+        while (!ssListparameters.eof())
         {
-            m_colList[counterCols]=m_tables[0] -> getColId(paramField);
-            counterCols++;
-            if(counterCols==3)
-                break;
+            
+            std::string paramField;
+            ssListparameters>>paramField;
+            if(m_tables[0] -> getColId(paramField)>=0)
+            {
+                m_colList[counterCols]=m_tables[0] -> getColId(paramField);
+                counterCols++;
+                if(counterCols==3)
+                    break;
+            }
         }
+
+        MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(m_colList, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
     }
+    else
+    {
+        MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(m_colList, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
+    }
+
     if(counterCols !=3)
     {
-        std::cerr<<"VSPointDistributeOp: Invalid columns in --points argument is given"<<std::endl;
+        std::cerr<<"VSPointDistributeOp: Invalid columns in --points argument is given "<< getParameterAsString("points") <<std::endl;
         return false;
     }
+
     // check for TSC
     if(isParameterPresent("tsc"))
     {
@@ -431,53 +458,80 @@ bool VSPointDistributeOp::execute()
     
     //check grid resolution
     
-    counterCols =0;
-    ssListparameters.clear();
-    ssListparameters.str(getParameterAsString("resolution"));
-    while (!ssListparameters.eof())
+    int vector_size;
+    if (rank == 0)
     {
-        std::string paramField;
-        ssListparameters>>paramField;
-        m_sampleDimensions[counterCols]=atoi(paramField.c_str()); //set resolution
-        if(m_sampleDimensions[counterCols]<=0)
+        counterCols =0;
+        ssListparameters.clear();
+        ssListparameters.str(getParameterAsString("resolution"));
+        while (!ssListparameters.eof())
         {
-            std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
-            return false;
+            std::string paramField;
+            ssListparameters>>paramField;
+            m_sampleDimensions[counterCols]=atoi(paramField.c_str()); //set resolution
+            if(m_sampleDimensions[counterCols]<=0)
+            {
+                std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
+                return false;
+            }
+            counterCols++;
+            if(counterCols==3)
+                break;
         }
-        counterCols++;
-        if(counterCols==3)
-            break;
-    }
-    
+    }    
+
+    MPI_Bcast(&counterCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if(counterCols<3)
     {
         std::cerr<<"VSPointDistributeOp: Invalid resolution is given"<<std::endl;
         return false;
     }
-    std::stringstream fieldNameSStream;
-    fieldNameSStream<<getParameterAsString("field");
-    if(fieldNameSStream.str()==""||fieldNameSStream.str()=="unknown")
+
+    MPI_Bcast(m_sampleDimensions, counterCols, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    if (rank == 0)
     {
-        m_useConstant=true;
-        fieldList.push_back(-1);
-        if(isParameterPresent("constant"))
-            m_constValue=getParameterAsFloat("constant");
-    }else
-    {
-        while (!fieldNameSStream.eof())
+        std::stringstream fieldNameSStream;
+        fieldNameSStream<<getParameterAsString("field");
+        if(fieldNameSStream.str()==""||fieldNameSStream.str()=="unknown")
         {
-            std::string paramField;
-            fieldNameSStream>>paramField;
-            if(m_tables[0] -> getColId(paramField)>=0)
-                fieldList.push_back(m_tables[0] -> getColId(paramField));
-            if(m_avg) break;
+            m_useConstant=true;
+            fieldList.push_back(-1);
+            if(isParameterPresent("constant"))
+                m_constValue=getParameterAsFloat("constant");
+        }else
+        {
+            while (!fieldNameSStream.eof())
+            {
+                std::string paramField;
+                fieldNameSStream>>paramField;
+                if(m_tables[0] -> getColId(paramField)>=0)
+                    fieldList.push_back(m_tables[0] -> getColId(paramField));
+                if(m_avg) break;
+            }
         }
+
+        vector_size = fieldList.size();
     }
+    MPI_Bcast(&m_constValue, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&vector_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&m_useConstant, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+
+
+    if (rank != 0) {
+        // All other ranks resize their vector to match the size received from Rank 0.
+        fieldList.resize(vector_size);
+    }
+    MPI_Bcast(fieldList.data(), vector_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
     if(fieldList.size()<=0)
     {
         std::cerr<<"Pointdistribute. Invalid field is given"<<std::endl;
         return false;
     }
+    
     //prepare colList: list of columns to be read
     unsigned int *colList;
     unsigned int nOfField= fieldList.size();
@@ -502,18 +556,21 @@ bool VSPointDistributeOp::execute()
     
     unsigned long long int totRows=m_tables[0]->getNumberOfRows();
     int maxInt=getMaxNumberInt();
+
     
     if(totRows>maxInt)
         m_nOfRow=maxInt;
     else
         m_nOfRow=totRows;
-    
+
+    // std::cout << " rank " << rank << " totRows " << totRows << " maxInt " << maxInt << " m_nOfRow " << m_nOfRow << std::endl;
+
     unsigned long long int gridPts = m_sampleDimensions[0] * m_sampleDimensions[1] * m_sampleDimensions[2];
     if(gridPts>maxInt)
         m_numNewPts=maxInt;
     else
         m_numNewPts=gridPts;
-    
+
     bool allocationArray=allocateArray((int) fieldList.size());
     
     
@@ -696,16 +753,75 @@ bool VSPointDistributeOp::execute()
     float cellVolume=m_spacing[0]*m_spacing[1]*m_spacing[2];
     if(isParameterPresent("nodensity") || m_avg)
         cellVolume=1.0;
+
+	//parallelization of the CIC with MPI.
     
+    //Processes data in chunks until all elements (totEle) are handled
+
+    int num_threads=omp_get_max_threads();
+
+    float* local_mgrid = nullptr;
+    local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+    if (local_mgrid == nullptr) { // Check for null pointer
+        std::cout << "Error: Failed to allocate thread_reduce_mgrid." << std::endl;
+    } 
+
+    #pragma omp parallel for
+    for (int x = 0; x < num_threads * m_numNewPts * nOfField; x++)
+        local_mgrid[x] = 0.;
+
     while(totEle!=0)
     {
         // Table douwnLoad
         fromRow=startCounter;
         toRow=fromRow+m_nOfRow-1;
+
+        //boundary check
         if(toRow>totRows-1)
             toRow=totRows-1;
-        m_tables[0]->getColumn(colList,m_nOfCol, fromRow, toRow, m_fArray);
         
+        /* 
+        if (rank == 0) 
+        {
+            m_tables[0]->getColumn(colList, m_nOfCol, fromRow, toRow, m_fArray);
+        }
+        */
+
+        // parallel
+
+        //if (rank == 0)
+        //{
+        //    std::cout << std::endl << std::endl;
+        //    std::cout << " from_row: " << fromRow << " to_row: " << toRow << std::endl;
+        //}
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        int chunk_size=((toRow-fromRow+1) / size) +1;
+
+        int start_chunk, end_chunk;
+        start_chunk = fromRow + chunk_size*rank;
+        end_chunk = fromRow + chunk_size*(rank+1);
+
+        if (end_chunk > toRow)
+            end_chunk = toRow;
+
+        // every process reads its own chunk of the defined range [start_chunk, end_chunk]
+        m_tables[0]->getColumn(
+                colList, 
+                m_nOfCol, 
+                start_chunk, 
+                end_chunk,
+                m_fArray
+            );
+
+        //std::cout << "rank: "<< rank << " startchunk: " << start_chunk << " endchunk: " << end_chunk << std::endl;
+        //for (int i=0;i<m_nOfCol;i++)
+        //    std::cout <<  "," << colList[i]; 
+        //std::cout << std::endl;
+        
+            
+            //ngp
+            
         if(m_ngp)
         {
             int ind;
@@ -753,6 +869,7 @@ bool VSPointDistributeOp::execute()
                		ind = i3*jkFactor + i2*jFactor + i1;
                     if(ind>nCell-1) continue;
                     
+                 
                     // calculate density
                     
                     if(ind<gridIndex[0] || ind>gridIndex[1]) //ind1 NOT in cache!
@@ -785,14 +902,38 @@ bool VSPointDistributeOp::execute()
             } //for(... ptId..)
         } // close if ngp
         
-        if(m_cic)
-        {
+            if(m_cic)
+            {
             float wc=0.;
             unsigned long long int nCell=m_sampleDimensions[0]*m_sampleDimensions[1]*m_sampleDimensions[2];
             // CIC on points
-            for (int ptId=0; ptId < toRow-fromRow+1; ptId++)
+            //printf(" %d of %d processes \n", rank, size);
+
+
+            
+            bool should_exit = false; // Shared flag
+            int end_limit = end_chunk-start_chunk+1;
+            MPI_Barrier(MPI_COMM_WORLD);
+            //printf(" rank %d now entering critical region \n", rank);
+            // for (int ptId=0; ptId < toRow-fromRow+1; ptId++) // Serial
+            //Each process handles its assigned data (ptId range)
+        
+            auto start = std::chrono::high_resolution_clock::now();
+
+            #pragma omp parallel for num_threads(num_threads) private(wc, norm)
+            for (int ptId=0; ptId < end_limit; ptId++) // Parallel
             {
-                //		std::clog<<ptId<<std::endl;
+                if (should_exit)
+                {
+                    std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
+                    continue;
+                }
+                
+                int thread_id = omp_get_thread_num(); // gets current thread id
+                int thread_num = omp_get_num_threads(); // gets number of threads
+                if (thread_num != num_threads)
+                    std::cout << "Error: Unexpected number of threads" << thread_num << ", " << num_threads << std::endl;
+
                 wc=0.;
                 float px[3];
                 px[0]=m_fArray[0][ptId];
@@ -877,6 +1018,7 @@ bool VSPointDistributeOp::execute()
                 for(int n=0;n<8;n++)
                 {
                     if(ind[n]<0  || ind[n]>=nCell)
+                    
                         continue;
                     if(ind[n]<gridIndex[0] || ind[n]>gridIndex[1]) //ind1 NOT in cache!
                     {
@@ -892,7 +1034,14 @@ bool VSPointDistributeOp::execute()
                             norm=m_constValue;
                         else
                             norm=m_fArray[3+j][ptId];
-                        m_grid[j][ind[n]-gridIndex[0]]+=d[n]*norm/cellVolume;
+                        /*
+                        #pragma omp critical
+                        {
+                            m_grid[j][ind[n]-gridIndex[0]]+=d[n]*norm/cellVolume;
+                        }
+                        */
+                        int index = ind[n]-gridIndex[0];
+                        local_mgrid[num_threads*m_numNewPts*j + m_numNewPts*thread_id + index]+=d[n]*norm/cellVolume;
                         wc+=d[n]*norm;
                         //		outpippo<<"ptId="<<ptId<<" GRID j="<<j<<" i="<<ind[n]-gridIndex[0] <<" curr val="<<d[n]*norm<<" acc="<<m_grid[j][ind[n]-gridIndex[0]]<<std::endl; //AA
                     }
@@ -901,13 +1050,43 @@ bool VSPointDistributeOp::execute()
                 // end main loop
                 if(wc>1.1*norm*fieldList.size())
                 {
+                    /*
                     std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
                     if(colList!=NULL) delete [] colList;
                     if(gridList!=NULL)delete [] gridList;
                     return false;
+                    */
+                    #pragma omp critical
+                    {
+                        should_exit = true;
+                        std::cout << "Error: wc value out of bound" << std::endl;
+                    }
                 }
                 
             } //for(... ptId..)
+
+            
+            if (rank == 0) 
+            {
+                auto end = std::chrono::high_resolution_clock::now();
+
+                // Calculate the duration
+                std::chrono::duration<float> duration = end - start;
+            
+                std::cout << "CIC time: " << duration.count() << " seconds" << std::endl;
+            }
+
+            
+            
+            MPI_Bcast(&should_exit, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+
+            if (should_exit)
+            {
+                if(colList!=NULL) delete [] colList;
+                if(gridList!=NULL)delete [] gridList;
+                return false;
+            }
+
         } // close if cic
 
         if(m_tsc) //TSC
@@ -922,7 +1101,7 @@ bool VSPointDistributeOp::execute()
                 /*		m_spacing[0]=70./128;
                  m_spacing[1]=70./128;
                  m_spacing[2]=70./128;*/
-                double node_x, node_y, node_z, dist_x, dist_y, dist_z, w_x, w_y, w_z, w;
+                float node_x, node_y, node_z, dist_x, dist_y, dist_z, w_x, w_y, w_z, w;
                 
                 px[0]=m_fArray[0][ptId]-m_origin[0];
                 if(periodic && px[0]<0.) px[0]+=m_sampleDimensions[0]*m_spacing[0];
@@ -1052,9 +1231,102 @@ bool VSPointDistributeOp::execute()
         totEle=totEle-(toRow-fromRow+1);
         if(totEle<0) totEle=0;
     }  // while(totEle!=0)
+
+    if(m_cic)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+                
+        auto start = std::chrono::high_resolution_clock::now();
+
+        
+        
+        float* thread_reduce_mgrid = nullptr;
+        thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+        if (thread_reduce_mgrid == nullptr) { // Check for null pointer
+            std::cout << ": Failed to allocate thread_reduce_mgrid." << std::endl;
+        } 
+
+        #pragma omp parallel for
+        for (int x = 0; x < m_numNewPts * nOfField; x++)
+            thread_reduce_mgrid[x] = 0.;
+
+
+        for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
+        {
+            #pragma omp parallel for collapse(2)
+            for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+            {
+                for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                {
+                    thread_reduce_mgrid[m_numNewPts*x + y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
+                }
+            }
+        }
+
+        
+        MPI_Barrier(MPI_COMM_WORLD);
+        
+        float* proc_reduce_mgrid = nullptr;
+        if (rank == 0) 
+        {
+            proc_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            if (proc_reduce_mgrid == nullptr) { // Check for null pointer
+                std::cout << ": Failed to allocate proc_reduce_mgrid." << std::endl;
+            } 
+
+            #pragma omp parallel for
+            for (int x = 0; x < m_numNewPts * nOfField; x++)
+                proc_reduce_mgrid[x] = 0.;
+        }
+            
+        int result_code = MPI_Reduce(
+                thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
+                proc_reduce_mgrid,       // Pointer to the buffer on the root process
+                nOfField * m_numNewPts,               // Count of elements in a single field/row
+                MPI_FLOAT,                 // Data type
+                MPI_SUM,                   // Operation
+                0,                         // Destination rank
+                MPI_COMM_WORLD
+            ); 
+
+        if (result_code != MPI_SUCCESS) {
+            // An error occurred during the MPI_Reduce operation
+            std::cout << "MPI Error: MPI_Reduce failed " << std::endl;
+        }
+
+
+        if (rank == 0) 
+        {    
+            #pragma omp parallel for collapse(2)
+            for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+            {
+                for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                {
+                    m_grid[x][y] += proc_reduce_mgrid[ m_numNewPts*x + y];
+                }
+            }
+            
+            delete[] proc_reduce_mgrid;
+        } 
+
+        delete[] thread_reduce_mgrid; 
+
+
+        if (rank == 0)
+        {
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<float> duration = end - start;
+            std::cout << "Reduction time: " << duration.count() << " seconds" << std::endl;
+        }
+    }
+    
+
+
+
     // final write of tableGrid
     if(m_avg) nOfField=3;
-    tableGrid.putColumn(gridList,nOfField,gridIndex[0],gridIndex[1],m_grid);  
+    if (rank == 0)
+        tableGrid.putColumn(gridList,nOfField,gridIndex[0],gridIndex[1],m_grid);  
     
     m_executeDone=true;
     /*      	std::ofstream outtFile("/home/ube/test/1.txt",std::ios::out);
@@ -1063,7 +1335,7 @@ bool VSPointDistributeOp::execute()
      
      for(int ind_x = 0; ind_x <m_numNewPts; ++ind_x)
      {
-     double den_w = m_grid[0][ind_x];
+     float den_w = m_grid[0][ind_x];
      outtFile<<ind_x<<" "<<m_grid[0][ind_x]<<std::endl;
      }// closes x cycle 
      outtFile.close();*/
@@ -1071,3 +1343,4 @@ bool VSPointDistributeOp::execute()
     if(gridList!=NULL)delete [] gridList;
     return true;
 }
+
