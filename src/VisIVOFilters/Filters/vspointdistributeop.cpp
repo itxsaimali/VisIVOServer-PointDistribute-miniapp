@@ -757,6 +757,19 @@ bool VSPointDistributeOp::execute()
 	//parallelization of the CIC with MPI.
     
     //Processes data in chunks until all elements (totEle) are handled
+
+    int num_threads=omp_get_max_threads();
+
+    float* local_mgrid = nullptr;
+    local_mgrid = new float[ num_threads * m_numNewPts * nOfField ];
+    if (local_mgrid == nullptr) { // Check for null pointer
+        std::cout << "Error: Failed to allocate thread_reduce_mgrid." << std::endl;
+    } 
+
+    #pragma omp parallel for
+    for (int x = 0; x < num_threads * m_numNewPts * nOfField; x++)
+        local_mgrid[x] = 0.;
+
     while(totEle!=0)
     {
         // Table douwnLoad
@@ -897,17 +910,6 @@ bool VSPointDistributeOp::execute()
             //printf(" %d of %d processes \n", rank, size);
 
 
-            int num_threads=omp_get_max_threads();
-    
-            double* local_mgrid = nullptr;
-            local_mgrid = new double[ num_threads * m_numNewPts * nOfField ];
-            if (local_mgrid == nullptr) { // Check for null pointer
-                std::cout << "Error: Failed to allocate thread_reduce_mgrid." << std::endl;
-            } 
-
-            #pragma omp parallel for
-            for (int x = 0; x < num_threads * m_numNewPts * nOfField; x++)
-                local_mgrid[x] = 0.;
             
             bool should_exit = false; // Shared flag
             int end_limit = end_chunk-start_chunk+1;
@@ -922,7 +924,10 @@ bool VSPointDistributeOp::execute()
             for (int ptId=0; ptId < end_limit; ptId++) // Parallel
             {
                 if (should_exit)
+                {
+                    std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
                     continue;
+                }
                 
                 int thread_id = omp_get_thread_num(); // gets current thread id
                 int thread_num = omp_get_num_threads(); // gets number of threads
@@ -1066,106 +1071,21 @@ bool VSPointDistributeOp::execute()
                 auto end = std::chrono::high_resolution_clock::now();
 
                 // Calculate the duration
-                std::chrono::duration<double> duration = end - start;
+                std::chrono::duration<float> duration = end - start;
             
                 std::cout << "CIC time: " << duration.count() << " seconds" << std::endl;
             }
 
             
-            MPI_Barrier(MPI_COMM_WORLD);
             
-            start = std::chrono::high_resolution_clock::now();
-
-            
-            
-            double* thread_reduce_mgrid = nullptr;
-            thread_reduce_mgrid = new double[ m_numNewPts * nOfField ];
-            if (thread_reduce_mgrid == nullptr) { // Check for null pointer
-                std::cout << ": Failed to allocate thread_reduce_mgrid." << std::endl;
-            } 
-
-            #pragma omp parallel for
-            for (int x = 0; x < m_numNewPts * nOfField; x++)
-                thread_reduce_mgrid[x] = 0.;
-
-
-            for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
-            {
-                #pragma omp parallel for collapse(2)
-                for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
-                {
-                    for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
-                    {
-                        thread_reduce_mgrid[m_numNewPts*x + y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
-                    }
-                }
-            }
-
-            
-            MPI_Barrier(MPI_COMM_WORLD);
-            
-            double* proc_reduce_mgrid = nullptr;
-            if (rank == 0) 
-            {
-                proc_reduce_mgrid = new double[ m_numNewPts * nOfField ];
-                if (proc_reduce_mgrid == nullptr) { // Check for null pointer
-                    std::cout << ": Failed to allocate proc_reduce_mgrid." << std::endl;
-                } 
-
-                #pragma omp parallel for
-                for (int x = 0; x < m_numNewPts * nOfField; x++)
-                    proc_reduce_mgrid[x] = 0.;
-            }
-             
-            int result_code = MPI_Reduce(
-                    thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
-                    proc_reduce_mgrid,       // Pointer to the buffer on the root process
-                    nOfField * m_numNewPts,               // Count of elements in a single field/row
-                    MPI_DOUBLE,                 // Data type
-                    MPI_SUM,                   // Operation
-                    0,                         // Destination rank
-                    MPI_COMM_WORLD
-                ); 
-
-            if (result_code != MPI_SUCCESS) {
-                // An error occurred during the MPI_Reduce operation
-                std::cout << "MPI Error: MPI_Reduce failed " << std::endl;
-            }
-
-
-            if (rank == 0) 
-            {    
-                #pragma omp parallel for collapse(2)
-                for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
-                {
-                    for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
-                    {
-                        m_grid[x][y] += proc_reduce_mgrid[ m_numNewPts*x + y];
-                    }
-                }
-                
-                delete[] proc_reduce_mgrid;
-            } 
-
-            delete[] thread_reduce_mgrid; 
-
             MPI_Bcast(&should_exit, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
             if (should_exit)
             {
-                std::cerr<<"Error 2 on cic schema. Operation Aborted"<<std::endl;
                 if(colList!=NULL) delete [] colList;
                 if(gridList!=NULL)delete [] gridList;
                 return false;
             }
-
-            if (rank == 0)
-            {
-                auto end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> duration = end - start;
-                std::cout << "Reduction time: " << duration.count() << " seconds" << std::endl;
-            }
-        
 
         } // close if cic
 
@@ -1181,7 +1101,7 @@ bool VSPointDistributeOp::execute()
                 /*		m_spacing[0]=70./128;
                  m_spacing[1]=70./128;
                  m_spacing[2]=70./128;*/
-                double node_x, node_y, node_z, dist_x, dist_y, dist_z, w_x, w_y, w_z, w;
+                float node_x, node_y, node_z, dist_x, dist_y, dist_z, w_x, w_y, w_z, w;
                 
                 px[0]=m_fArray[0][ptId]-m_origin[0];
                 if(periodic && px[0]<0.) px[0]+=m_sampleDimensions[0]*m_spacing[0];
@@ -1311,6 +1231,98 @@ bool VSPointDistributeOp::execute()
         totEle=totEle-(toRow-fromRow+1);
         if(totEle<0) totEle=0;
     }  // while(totEle!=0)
+
+    if(m_cic)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+                
+        auto start = std::chrono::high_resolution_clock::now();
+
+        
+        
+        float* thread_reduce_mgrid = nullptr;
+        thread_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+        if (thread_reduce_mgrid == nullptr) { // Check for null pointer
+            std::cout << ": Failed to allocate thread_reduce_mgrid." << std::endl;
+        } 
+
+        #pragma omp parallel for
+        for (int x = 0; x < m_numNewPts * nOfField; x++)
+            thread_reduce_mgrid[x] = 0.;
+
+
+        for (int n = 0; n < num_threads; n++) // Number of fields/variables being computed (outer loop)
+        {
+            #pragma omp parallel for collapse(2)
+            for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+            {
+                for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                {
+                    thread_reduce_mgrid[m_numNewPts*x + y] += local_mgrid[num_threads*m_numNewPts*x + m_numNewPts*n + y];
+                }
+            }
+        }
+
+        
+        MPI_Barrier(MPI_COMM_WORLD);
+        
+        float* proc_reduce_mgrid = nullptr;
+        if (rank == 0) 
+        {
+            proc_reduce_mgrid = new float[ m_numNewPts * nOfField ];
+            if (proc_reduce_mgrid == nullptr) { // Check for null pointer
+                std::cout << ": Failed to allocate proc_reduce_mgrid." << std::endl;
+            } 
+
+            #pragma omp parallel for
+            for (int x = 0; x < m_numNewPts * nOfField; x++)
+                proc_reduce_mgrid[x] = 0.;
+        }
+            
+        int result_code = MPI_Reduce(
+                thread_reduce_mgrid,                 // Pointer to the local field's data (contiguous array)
+                proc_reduce_mgrid,       // Pointer to the buffer on the root process
+                nOfField * m_numNewPts,               // Count of elements in a single field/row
+                MPI_FLOAT,                 // Data type
+                MPI_SUM,                   // Operation
+                0,                         // Destination rank
+                MPI_COMM_WORLD
+            ); 
+
+        if (result_code != MPI_SUCCESS) {
+            // An error occurred during the MPI_Reduce operation
+            std::cout << "MPI Error: MPI_Reduce failed " << std::endl;
+        }
+
+
+        if (rank == 0) 
+        {    
+            #pragma omp parallel for collapse(2)
+            for (int x = 0; x < nOfField; x++) // Number of fields/variables being computed (outer loop)
+            {
+                for (int y = 0; y < m_numNewPts; y++) // Number of grid points in the spatial domain (inner loop)
+                {
+                    m_grid[x][y] += proc_reduce_mgrid[ m_numNewPts*x + y];
+                }
+            }
+            
+            delete[] proc_reduce_mgrid;
+        } 
+
+        delete[] thread_reduce_mgrid; 
+
+
+        if (rank == 0)
+        {
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<float> duration = end - start;
+            std::cout << "Reduction time: " << duration.count() << " seconds" << std::endl;
+        }
+    }
+    
+
+
+
     // final write of tableGrid
     if(m_avg) nOfField=3;
     if (rank == 0)
@@ -1323,7 +1335,7 @@ bool VSPointDistributeOp::execute()
      
      for(int ind_x = 0; ind_x <m_numNewPts; ++ind_x)
      {
-     double den_w = m_grid[0][ind_x];
+     float den_w = m_grid[0][ind_x];
      outtFile<<ind_x<<" "<<m_grid[0][ind_x]<<std::endl;
      }// closes x cycle 
      outtFile.close();*/
@@ -1331,3 +1343,4 @@ bool VSPointDistributeOp::execute()
     if(gridList!=NULL)delete [] gridList;
     return true;
 }
+
