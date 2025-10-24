@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(Boost REQUIRED)
-find_package(MPI REQUIRED)
 
 set(FILTERS_SOURCE
     Filters/mainFilter.cpp
@@ -34,11 +33,8 @@ add_executable(VisIVOFilter ${FILTERS_SOURCE} ${UTILS_SOURCE})
 
 install(TARGETS VisIVOFilter DESTINATION bin)
 
-target_include_directories(VisIVOFilter PRIVATE
+target_include_directories(VisIVOFilter PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/Filters
     ${UTILS_SOURCE_DIR}
     ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(VisIVOFilter PRIVATE
-   MPI::MPI_CXX)
-target_compile_definitions(VisIVOFilter PRIVATE VSMPI)

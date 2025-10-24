@@ -24,35 +24,33 @@
 #include <sstream>
 #include <string>
 
-#include "vstable.h" // Assumed to define VSTable class for data handling
+#include "vstable.h"
 
-#include "vspointdistributeop.h" // Custom header for point distribution operation
-#include "startFilter.h"  // Self-header for class definition
+#include "vspointdistributeop.h"
+#include "startFilter.h"
 
-//#ifdef VSMPI shows constructor expects MPI_Comm object, allowing main.cpp to pass the NEW_COMM if in parallel mode. 
 #ifdef VSMPI
 #include "mpi.h"
 startFilter::startFilter(std::map<std::string,std::string> appParameters,MPI_Comm newcomm)
 #else
 startFilter::startFilter(std::map<std::string,std::string> appParameters)
 #endif
-    //Constructor Initialization
-{      //It declares local variables rank, size, and ierr.
+
+{
     std::map<std::string,std::string>::iterator iter;
     int rank=0, size=1, ierr;
 #ifdef VSMPI
     m_VS_COMM=newcomm;
-    //Sets MPI to return error codes instead of stucking the program on errors,
-    MPI_Comm_set_errhandler(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
+    MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
     ierr=MPI_Comm_size (m_VS_COMM, &size);
     if(ierr!=MPI_SUCCESS) return;
     ierr=MPI_Comm_rank (m_VS_COMM, &rank);
     if(ierr!=MPI_SUCCESS) return;
     
-    //std::cout<<rank<<" TEST "<<size<<std::endl;
+    std::clog<<rank<<" TEST "<<size<<std::endl;
 #endif
-       //Operation Lookup and Dispatch. 
-    iter =appParameters.find("op"); //This section parses the op (operation) parameter from the appParameters map.
+        
+    iter =appParameters.find("op");
     if( iter == appParameters.end())
     {
         if (rank==0) {
@@ -73,7 +71,7 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
     appParameters.erase(iter);
     int idOp=-1;
     
-    //Operation Execution (switch statement for "pointdistribute").
+    
     if(sstreamOp.str()=="pointdistribute") idOp=12;
     
     std::vector <std::string> valOutFilename;
@@ -85,116 +83,44 @@ startFilter::startFilter(std::map<std::string,std::string> appParameters)
             /*** PointDistribute  OP **/
         case 12:
         {
-        
-            VSPointDistributeOp op;
-            
-            /*iter =appParameters.find("help"); 
-            if( iter != appParameters.end())
-            {                                  //applied if statement only to print help by rank == 0
-                op.printHelp();                    
-                return;
-            }
-        
-        
-            iter =appParameters.find("file");
-            if( iter == appParameters.end())
+            //serial
+            if(rank==0)  //serialized
             {
-                std::cerr <<"No input file table is provided"<<std::endl;
-                return;
-            }
-            
-
-            std::stringstream sFilename(iter->second);
-            sFilename>>filename;
-            if(filename.find(".bin") == std::string::npos)
-                filename.append(".bin");
-            VSTable table(filename);
-            
-            if(!table.tableExist())
-            {
-                std::cerr <<"No valid input file table is provided"<<std::endl;
-                return;
-            }
-            op.setParameters(appParameters);
-            op.addInput(&table);*/
-            int signal = 0;
-            if (rank == 0)
-            {                   //Help and File Validation
-                iter =appParameters.find("help"); 
+                
+                iter =appParameters.find("help");
                 if( iter != appParameters.end())
-                {                                  //applied if statement only to print help by rank == 0
-                    op.printHelp();                    
-                    signal = 1;
-                    MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                {
+                    VSPointDistributeOp op;
+                    op.printHelp();
                     return;
                 }
-            
-            
+                
                 iter =appParameters.find("file");
                 if( iter == appParameters.end())
                 {
                     std::cerr <<"No input file table is provided"<<std::endl;
-                    //initial checks pass, Rank 0 sets signal = 0 and broadcasts it
-                    signal = 1;
-                    MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     return;
                 }
-                
-                //Filename Distribution
                 std::stringstream sFilename(iter->second);
+                // appParameters.erase(iter);
                 sFilename>>filename;
                 if(filename.find(".bin") == std::string::npos)
                     filename.append(".bin");
-                //Rank 0 Sends Filename
-                signal = 0;
-                MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                
-            }
-            else
-            {
-                MPI_Bcast(&signal, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                if (signal == 1)
-                    return;
-            }    
-            MPI_Barrier(MPI_COMM_WORLD);
-            if (rank == 0)
-            {
-                int string_length = filename.length(); // Get the number of characters
-                MPI_Bcast(&string_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                MPI_Bcast((void*)filename.data(), string_length, MPI_CHAR, 0, MPI_COMM_WORLD);
-                //Other Ranks Receive Filename
-            }
-            else
-            {
-                int received_length;
-
-                MPI_Bcast(&received_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                filename.resize(received_length);
-                MPI_Bcast((void*)filename.data(), received_length, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-            }
-                //Final File Validation 
-            VSTable table(filename);
-            if (rank == 0)
-            {               //Rank 0 constructs a VSTable
+                VSTable table(filename);
                 if(!table.tableExist())
                 {
                     std::cerr <<"No valid input file table is provided"<<std::endl;
-                    int exit_flag = 1;
-                    MPI_Bcast(&exit_flag, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     return;
                 }
+                
+                VSPointDistributeOp op;
+                op.setParameters(appParameters);
+                op.addInput(&table);
+                op.execute();
+                valOutFilename=op.realOutFilename();
+               
+                
             }
-            //Final Synchronization and Execution
-            MPI_Barrier(MPI_COMM_WORLD);
-            op.setParameters(appParameters);
-            op.addInput(&table);
-            
-            // Setup and Execute
-            MPI_Barrier(MPI_COMM_WORLD);
-            op.execute();
-            valOutFilename=op.realOutFilename();
-
             break;
         }
             /*** END PointDistribute OP **/

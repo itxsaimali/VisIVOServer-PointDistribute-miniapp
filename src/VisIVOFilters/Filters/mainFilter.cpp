@@ -1,18 +1,34 @@
+/***************************************************************************
+ *   Copyright (C) 2008 by Ugo Becciani   *
+ *   ugo.becciani@oact.inaf.it   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 #include <cstdlib>
 #include <cstring>
+
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <chrono>
 #include <vector>
 #include <map>
-#include <omp.h>
 #include "parametersparser.h"
 #include "startFilter.h"
-#include "vstable.h" // <--- ADD THIS LINE
-
 #ifdef VSMPI
-#pragma message "MPI-PARALLEL compilation" // Setting up the runtime environment (MPI or serial).
+#pragma message "MPI-PARALLEL compilation"
 #include "mpi.h"
 #else
 #pragma message "SERIAL compilation"
@@ -21,30 +37,27 @@
 int main(int argc, char *argv[])
 {
 #ifdef VSMPI
-    // std::cout<<"VSMPI"<<std::endl;
+    std::cout<<"VSMPI"<<std::endl;
 #endif
     int size=1,rank=0;
     std::string paramFilename;
+    
     std::stringstream commandParametersSStream;
     std::map<std::string, std::string> appParameters;
     std::map<std::string, std::string>::iterator iter;
+    
     bool paramFileGiven=false;
-
+    
 #ifdef VSMPI
-// parallel environment for all processes
-    MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // if (rank == 0)
-    //    std::cout << "MPI is enabled!" << std::endl;
-#else
-    std::cout << "MPI is NOT enabled!" << std::endl;
+    
+    MPI_Init (&argc, &argv);
+    MPI_Comm_size (MPI_COMM_WORLD, &size);
+    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
     
 #endif
-    //Parameter Parsing Logic:
-  // if (rank == 0) // <--- ADD THIS LINE
-//{       
-    if(argc==2)
+    
+    
+    if(argc==2)  // The parameter File is given!
     {
         paramFileGiven=true;
         std::string argStr;
@@ -52,19 +65,16 @@ int main(int argc, char *argv[])
         if (argStr=="--op"||argStr=="-op")
             paramFileGiven=false;
         if (argStr=="-help"||argStr=="--help")
-
             paramFileGiven=false;
         if(paramFileGiven)
             paramFilename=argStr;
     }
-    //main code directly uses the ParametersParser class. 
-    //It represent myparser,which encapsulates the complex parsing logic.
-    if(paramFileGiven)
+    
+    if(paramFileGiven) //fill  appParameters with parameter file content
     {
         ParametersParser myparser(paramFilename,1);
-        appParameters=myparser.getParameters();
-    }
-    else
+        appParameters=myparser.getParameters(); //! local copy of the options given
+    } else
     {
         bool fileIsAtTheEnd=true;
         for (int i=1;i<argc;i++)
@@ -93,7 +103,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
+        
         if (fileIsAtTheEnd)
         {
             for (int i=1;i<argc-1;i++) commandParametersSStream<< argv[i]<<" ";
@@ -101,63 +111,48 @@ int main(int argc, char *argv[])
         }
         else
             for (int i=1;i<argc;i++) commandParametersSStream<< argv[i]<<" ";
-
+        
+        
         ParametersParser myparser(commandParametersSStream.str());
         appParameters=myparser.getParameters();
-    }
-    //MPI Sub-Communicator Management (MPI only)
-    //It creates a new MPI communicator (NEW_COMM) containing only selected ranks.
-    int MpiSize=size;  //allow available MPI processes(mpisize parameter)to perform the main computation.
+    } //if paramFileGiven ... else
+    int MpiSize=size;
     iter=appParameters.find("mpisize");
     if(iter != appParameters.end())
         MpiSize=atoi(iter->second.c_str());
     if(MpiSize>size) MpiSize=size;
-
-#ifdef VSMPI
-    int *ranks = new int[MpiSize];
-    for(int i=0;i<MpiSize;i++) ranks[i]=i;
-
     
-    //printf(" MpiSize %d \n", MpiSize);
-    //Directly interacts with MPI group and communicator functions 
+    // this part implements the multi processes with MPI. It is the map that contains the info for multiprocess
+    // set size ==> size=1 means serial
+    ///////
+#ifdef VSMPI
+    int *ranks;
+    ranks= new int[MpiSize];
+    for(int i=0;i<MpiSize;i++) ranks[i]=i;
+    
+    // create a new communicator
     MPI_Group origGroup, newGroup;
     MPI_Comm NEW_COMM;
     MPI_Comm_group(MPI_COMM_WORLD, &origGroup);
-    MPI_Group_incl(origGroup, MpiSize, ranks, &newGroup);
+    MPI_Group_incl(origGroup,MpiSize,ranks,&newGroup);
     MPI_Comm_create(MPI_COMM_WORLD, newGroup, &NEW_COMM);
-  
-    int trank, tsize;
-    MPI_Comm_rank(MPI_COMM_WORLD, &trank);
-    MPI_Comm_size(MPI_COMM_WORLD, &tsize);
+    startFilter startFilter(appParameters,NEW_COMM); //test of MPI
     
-    auto start = std::chrono::high_resolution_clock::now();
+    //////////
+    
+    
+    //startFilter startFilter(appParameters); //default argument MPI_COMM_WORLD assumed in case of MPI
+    //#ifdef VSMPI
     MPI_Barrier(MPI_COMM_WORLD);
-    
-    startFilter startFilter(appParameters, NEW_COMM);
-    
-    
-    MPI_Barrier(MPI_COMM_WORLD);
-    auto end = std::chrono::high_resolution_clock::now();
-
     MPI_Finalize();
-
-    if (rank == 0)
-    {
-        // Calculate the duration
-        std::chrono::duration<double> duration = end - start;
-        int num_threads=omp_get_max_threads();
-        std::cout << "# of MPI Processes: " << size << std::endl;
-        std::cout << "# of OMP Threads per Proc: " << num_threads << std::endl;
-        std::cout << "Execution time: " << duration.count() << " seconds" << std::endl;
-    }
-    delete[] ranks;
-//}
-#else
-    //Core Application Logic Invocation
-    //Passing control and configuration to  complex parsing logic(startFilter, which then call vspointdistributeop.cpp).
-    //This creates an object startFilter, which then call vspointdistributeop.cpp
-    startFilter startFilter(appParameters); //// Parallel execution
+    
 #endif
-
+    startFilter startFilter(appParameters);
     return EXIT_SUCCESS;
 }
+
+//#ifdef HAVE_CONFIG_H
+//#include <config.h>
+//#endif
+
+

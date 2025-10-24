@@ -25,24 +25,18 @@
 #include <sstream>
 #include <iostream>
 #include <set>
-//acts as the foundational layer, setting up the basic operational environment based on what main and startFilter provide.
-// the implementation of the VSTable class deals with the actual reading and writing of table data.
+
 //const unsigned int VSTableOp::MAX_NUMBER_INT = 2147483647;
 const unsigned int VSTableOp::MAX_NUMBER_INT = 250000000;
 //const unsigned int VSTableOp::MAX_NUMBER_INT = 25000000;
 //const unsigned int VSTableOp::MAX_NUMBER_INT = 66000;
 
-//Handling MPI context (rank, size),Managing input tables.
-//Storing and retrieving configuration parameters.
-//Constructor
 #ifdef VSMPI
 VSTableOp::VSTableOp(MPI_Comm newcomm)
 #else
 VSTableOp::VSTableOp()
 #endif
 {
-  //It provides member variables (m_MpiRank, m_MpiSize, m_VS_COMM) 
-  //to store and manage the MPI context for an operation,
     m_MpiRank=0;
     m_MpiSize=1;
 #ifdef VSMPI
@@ -56,14 +50,12 @@ VSTableOp::VSTableOp()
 }
 
 
-//Destructor
+
 VSTableOp::~VSTableOp()
 {
 }
 
-//addInput Method
-//allows a VSTable object (representing an input data file) to be registered with the operation.
-//It stores a pointer to the VSTable object in m_tables.
+
 bool VSTableOp::addInput(VSTable *table)
 {
   if(table)
@@ -75,8 +67,7 @@ bool VSTableOp::addInput(VSTable *table)
   
   return false;
 }
-//addParameter Method
-//It allows specific parameters relevant to outputfile to be passed.
+
 bool VSTableOp::addParameter(std::string key,std::string value)
 {
  
@@ -102,7 +93,7 @@ bool VSTableOp::addParameter(std::string key,std::string value)
   }
    return true; 
 }
-//getParameterAs Methods
+
 std::string VSTableOp::getParameterAsString(std::string parameter)
 {
   if(!m_parameters.count(parameter))
@@ -139,7 +130,6 @@ float VSTableOp::getParameterAsFloat(std::string parameter)
     
     return ret;
 }
-//getMaxNumberInt Method (Memory Limit Adjustment)
 int VSTableOp::getMaxNumberInt()
 {
     if(isParameterPresent("memsizelimit"))
